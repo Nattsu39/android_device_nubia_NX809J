@@ -4,4 +4,12 @@
     <string name="quick_settings_tiles_default" translatable="false">
         custom(com.nubia.rmcontrol/.LoudnessTile),custom(com.nubia.rmcontrol/.FpWakeTile),custom(com.nubia.rmcontrol/.Dt2wTile),custom(com.nubia.rmcontrol/.FanTile),custom(com.nubia.rmcontrol/.CoolingTile),internet,bt,flashlight,dnd,alarm,airplane,rotation,battery,cast,screenrecord,color_correction,inversion,saver,dark,location,onehanded
     </string>
+    <!-- RedMagicOS 11 ZTE_STANDARD LTE/NR display curve, in dBm. -->
+    <integer-array name="config_mobileSignalStrengthRsrpThresholds">
+        <item>-97</item>
+        <item>-105</item>
+        <item>-114</item>
+        <item>-118</item>
+        <item>-123</item>
+    </integer-array>
 </resources>
