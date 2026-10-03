@@ -32,6 +32,14 @@ command -v "$BIN/lpmake" >/dev/null || { echo "ERROR: lpmake not found in $BIN (
 for f in "$SYS" "$SEXT" "$PROD" "$VEN" "$ODM" "$VDLKM" "$SDLKM"; do
   [ -f "$f" ] || { echo "ERROR: missing super input: $f"; exit 1; }
 done
+
+# system_ext contains the new control app and services. Their vendor_init
+# actions must accompany them even when the rest of ODM is retained from OEM.
+CONTROL_ODM="$OUTDIR/odm-control.img"
+BIN="$BIN" bash "$(dirname "${BASH_SOURCE[0]}")/prepare_control_odm.sh" \
+  "$ODM" "${CONTROL_ODM_BUILD_DIR:-$OUT/odm}" "$CONTROL_ODM"
+ODM="$CONTROL_ODM"
+
 sz(){ s=$(stat -c%s "$1"); echo $(( (s+4095)/4096*4096 )); }
 
 echo "== NX809J super inputs =="
