@@ -1,0 +1,5 @@
+# Lower the display mode after one second without screen updates.
+ro.surface_flinger.set_idle_timer_ms=1000
+
+# Keep the existing touch boost timeout while automatic mode switching is enabled.
+ro.surface_flinger.set_touch_timer_ms=200

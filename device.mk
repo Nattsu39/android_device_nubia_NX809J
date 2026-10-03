@@ -4,6 +4,16 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+# BEGIN NX809J DISPLAY POLICY
+# Display refresh rate and Always-On Display.
+PRODUCT_PACKAGES += \
+    NX809JDozeOverlay \
+    NX809JRefreshRateOverlay \
+    NX809JSettingsOverlay
+
+TARGET_SYSTEM_PROP += device/nubia/NX809J/display/refresh-rate.prop
+# END NX809J DISPLAY POLICY
+
 # A/B
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/launch_with_vendor_ramdisk.mk)
 

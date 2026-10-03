@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Override the stock vendor RRO with the highest mode exposed by this panel.
+         SurfaceFlinger's idle timer still selects the lowest allowed mode. -->
+    <integer name="config_defaultRefreshRate">144</integer>
+    <integer name="config_defaultPeakRefreshRate">144</integer>
+    <!-- Keep idle AOD below user and app refresh rate requests. -->
+    <integer name="config_dozeMaxRefreshRate">60</integer>
+    <!-- The stock AIDL HAL reports optical for this ultrasonic sensor. -->
+    <integer name="config_udfpsSensorType">2</integer>
+</resources>
