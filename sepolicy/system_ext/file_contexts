@@ -29,3 +29,6 @@
 # trips "process with updatable components exited 4 times".
 /system_ext/bin/hwcontrol       u:object_r:hwcontrol_exec:s0
 /system_ext/bin/slider_uewake   u:object_r:slider_uewake_exec:s0
+
+# Same tightly scoped health HAL access for the independent battery gate.
+/sys/class/qcom-battery/battery_charging_enabled    u:object_r:sysfs_batt_charge_control:s0

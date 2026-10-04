@@ -546,14 +546,15 @@ PRODUCT_CHECK_PREBUILT_MAX_PAGE_SIZE := false
 # can cap the charge level from Settings. The framework shows the toggle whenever
 # the vendor.lineage.health IChargingControl service is declared (no extra gate).
 #
-# The HAL is built to ODM (it is patched device_specific in
-# hardware/lineage/interfaces/health/aidl/default — vendor:true -> device_specific
-# plus its .rc exec path /vendor -> /odm) because we ride the STOCK /vendor
-# partition and never flash a built vendor.img; odm is the partition we ship.
+# The pinned personal health HAL source installs to system_ext. Stock vendor and
+# ODM images are retained, so the service, init script and VINTF fragment must
+# remain on the system side together with this device's health HAL policy.
 PRODUCT_PACKAGES += \
     vendor.lineage.health-service.default
 
 $(call soong_config_set,lineage_health,charging_control_charging_path,/sys/class/qcom-battery/charging_enabled)
+# Stock charge separation uses this independent battery gate (0 = bypass).
+$(call soong_config_set,lineage_health,charging_bypass_path,/sys/class/qcom-battery/battery_charging_enabled)
 $(call soong_config_set,lineage_health,charging_control_charging_enabled,1)
 $(call soong_config_set,lineage_health,charging_control_charging_disabled,0)
 # Charge-limit % slider + enforcement. IMPORTANT: this device's charger FIRMWARE
