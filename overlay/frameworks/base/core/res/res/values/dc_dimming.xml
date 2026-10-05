@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- NX809J / RedMagicOS11.0.21MR1 default software DC calibration. -->
+<resources>
+    <bool name="config_supportSoftwareDcDimming">true</bool>
+    <array name="config_softwareDcDimmingBrightness">
+        <item>0.0</item>
+        <item>0.0824</item>
+        <item>0.1608</item>
+        <item>0.2392</item>
+        <item>0.33</item>
+    </array>
+    <array name="config_softwareDcDimmingScale">
+        <item>0.2478</item>
+        <item>0.35</item>
+        <item>0.5255</item>
+        <item>0.7426</item>
+        <item>1.0</item>
+    </array>
+</resources>

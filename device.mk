@@ -14,6 +14,12 @@ PRODUCT_PACKAGES += \
 TARGET_SYSTEM_PROP += device/nubia/NX809J/display/refresh-rate.prop
 # END NX809J DISPLAY POLICY
 
+# BEGIN NX809J DC HDR CONFIG
+# Restore the stock HDR area threshold without changing the vendor partition.
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/display/display_id_4630947168392018835.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/displayconfig/display_id_4630947168392018835.xml
+# END NX809J DC HDR CONFIG
+
 # A/B
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/launch_with_vendor_ramdisk.mk)
 
