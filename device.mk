@@ -578,8 +578,8 @@ $(call soong_config_set,lineage_health,charging_control_charging_disabled,0)
 # never enforced + no shield.)
 $(call soong_config_set_bool,lineage_health,charging_control_supports_toggle,true)
 
-# Deferred SELinux enforcing: flip to Enforcing at boot_completed (boots permissive
-# so the init-domain security HALs connect, then enforces). See enforcing/README.md.
+# Retain the boot-completed enforcing assertion for compatibility. SELinux now
+# starts enforcing before Zygote; this rule is redundant on a normal boot.
 PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/rootdir/etc/init/nx809j-enforce.rc:$(TARGET_COPY_OUT_PRODUCT)/etc/init/nx809j-enforce.rc
 

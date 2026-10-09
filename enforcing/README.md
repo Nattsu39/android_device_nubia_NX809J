@@ -1,53 +1,71 @@
-# NX809J native SELinux enforcing — VALIDATED 2026-06-24
+# NX809J SELinux boot policy
 
-## What this is
-Native SELinux enforcing baked into the **vendor.img** (no KSU module). The device
-otherwise boots permissive (`androidboot.selinux=permissive`, BoardConfig); these rules
-are present in the loaded policy and the device runs enforcing cleanly with `setenforce 1`.
+## Current behavior
 
-## How it works (validated on-device)
-The LineageOS-built vendor.img is a curated subset that won't boot (missing ~638 stock
-files: keymint TEE deps, GPU drivers, etc.). So instead we take the **known-booting STOCK
-vendor** and append our enforcing rules to `/vendor/etc/selinux/vendor_sepolicy.cil` in CIL
-form. init recombines (our plat/system_ext/product + this vendor cil + odm) at boot →
-rules load natively. secilc-validated offline (no brick); boots clean (~12s); `setenforce 1`
-→ Enforcing, stable, 0 critical denials.
+Since 2026-10-09, BoardConfig leaves SELinux enforcing from early init. It no
+longer adds `androidboot.selinux=permissive` to the vendor boot command line.
+Android init defaults to enforcing when neither the command line nor bootconfig
+requests permissive mode. Check both inputs when changing the boot images.
 
-## Files
-- `native_enforcing_rules.cil` — 93 rules (91 from the runtime-validated KSU set, translated
-  magiskpolicy→CIL, minus 1 KSU-only `adbroot`; + 2 hal_light battery/usb-sysfs rules found
-  during the on-device enforcing soak).
-- `enforcing_rules.magiskpolicy` — same rules in magiskpolicy format (KSU module / runtime).
-- `build_native_enforcing_vendor.sh` — reproducible build (stock vendor + CIL → vendor.img).
+Zygote caches the enforcement state during initialization. The former scheme
+started Zygote while permissive and restored enforcement at `boot_completed`.
+That left the cache false and caused ordinary applications to skip seccomp
+installation even though `getenforce` later reported Enforcing.
 
-## To ship a boots-enforcing-by-default build
-1. `build_native_enforcing_vendor.sh` → vendor.img → lpmake super (see build_super_v20_enf.sh).
-2. Drop `androidboot.selinux=permissive` from BoardConfig.mk + rebuild/patch vendor_boot.
-Flashes via the UNCHANGED XDA method (it's just a super.img + vendor_boot).
+`nx809j-enforce.rc` is retained as a compatibility assertion. Its final write of
+`1` is redundant during normal startup and is not the mechanism that enables
+early enforcement. No framework seccomp bypass or new policy allow rule is part
+of this change.
 
-## Provenance
-Supersedes the KSU-module enforcing approach (which works but is an optional runtime module).
-The source-HAL built-vendor effort (vendor_hals.mk, display patches) is a separate WIP for
-official LOS (#18) and is NOT part of this enforcing path.
+## Validation on the current firmware
 
-## VALIDATED boots-enforcing-by-default (2026-06-24, super_v32)
-**Result: getenforce=Enforcing at boot, 0 blocked denials, UI healthy, keystore2/
-onekeymint/gatekeeper all alive — STABLE through soak.**
+The 2026-10-09 trial changed only the active vendor boot command line and its
+existing unsigned AVB hash. Kernel, ramdisk, DTB, bootconfig and installed policy
+were preserved. A real `vendorbootimage` build produced the same complete boot
+payload; its AVB salt differs from the minimal trial image.
 
-Approach = DEFERRED enforce (not first-stage):
-- Boot PERMISSIVE (androidboot.selinux=permissive in vendor_boot) so the stock
-  init-domain security HALs (onekeymint/gatekeeper) + keystore2 connect cleanly.
-- product/etc/init/nx809j-enforce.rc flips `write /sys/fs/selinux/enforce 1` on
-  property:sys.boot_completed=1 -> native Enforcing, no KSU module.
-- vendor.img = stock vendor + native_enforcing_rules.cil (161 rules) appended to
-  vendor_sepolicy.cil, labeled with the BUILD file_contexts (NOT stock fc — stock fc
-  left core paths unlabeled and crash-looped surfaceflinger/zygote).
+- Enforcement became active at approximately 0.87 seconds, before Zygote started
+  at approximately 4.44 seconds. The Zygote cache changed from 0 to 1.
+- Launcher, Settings and Duck processes had seccomp mode 2 with one filter.
+  Duck's ordinary-app reboot probe was blocked by seccomp.
+- KeyMint, Gatekeeper and QMI services started in their dedicated vendor domains.
+  The installed SIM returned to NR service; actual calls were not automated.
+- Four Camera2 previews passed without provider restarts or sensor NACKs.
+- Health telemetry, charging bypass transitions, fan control and fingerprint
+  wake arming worked; the user confirmed fingerprint unlock.
 
-WHY NOT first-stage: 4 attempts (super_v25-v30) all froze/bootlooped. Root cause =
-stock vendor runs onekeymint/gatekeeper in the INIT domain; under first-stage
-enforcing they fail to register / take divergent paths -> crash-loop -> init queue
-flood -> freeze. No rule set fixed it (permissive sweep can't predict enforce-path
-denials). Deferred-enforce is the correct design for init-domain HALs.
+This validates the existing firmware and user data, not every stock vendor
+version, a factory reset, all camera algorithms or long-term stability. Keep
+precise rollback images before testing another combination.
 
-Build: build_native_enforcing_vendor.sh (build-fc) -> super; ship product.img with
-nx809j-enforce.rc; vendor_boot stays permissive. XDA flash method UNCHANGED.
+## Remaining boot diagnostics
+
+The old `fp_cal_purge` shell service has no domain transition from init and is
+rejected under enforcing. This device already has `.rom_cal_purged`; the old
+one-shot migration was therefore redundant here. Migration from pre-August ROMs
+without that marker needs a properly scoped implementation and separate testing.
+Do not grant init general shell execution just to silence this diagnostic.
+
+Health property reads, camera directory searches, vendor-init control property
+reads and optional unsigned Hexagon service discovery still produce denials.
+The tested functions above work despite those specific denied accesses. Review
+the actual caller, label and required behavior before adding any policy rule;
+do not turn application property enumeration failures into blanket permissions.
+
+## Vendor policy and historical context
+
+The project retains the compatible stock vendor image. The files in this
+directory record the earlier vendor-policy integration:
+
+- `native_enforcing_rules.cil`: CIL additions used by the vendor repack.
+- `enforcing_rules.magiskpolicy`: historical runtime form of those additions.
+- `build_native_enforcing_vendor.sh`: vendor image preparation helper.
+
+June 2026 bring-up attempts reported QMI data-directory denials and security HALs
+running in the init domain. Deferred enforcement was used to obtain a working
+boot. Those observations do not describe the current dedicated HAL domains;
+the installed vendor policy also includes the former QMI directory permission.
+
+The runtime policy may additionally be modified by root modules. A successful
+test with those modules does not prove an unmodified vendor policy has identical
+behavior. Inspect the effective policy and boot logs for the image being tested.
