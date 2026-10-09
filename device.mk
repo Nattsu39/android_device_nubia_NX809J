@@ -428,6 +428,8 @@ include $(LOCAL_PATH)/vendor_source_extras.mk
 PRODUCT_BUILD_SUPER_PARTITION := true
 
 # Soong namespaces
+$(call inherit-product, $(LOCAL_PATH)/als/als.mk)
+
 PRODUCT_SOONG_NAMESPACES += \
     hardware/qcom-caf/sm8750 \
     hardware/qcom-caf/wlan \

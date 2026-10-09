@@ -1,0 +1,265 @@
+{
+  "shared": [
+    "libc++.so",
+    "libc.so",
+    "libdl.so",
+    "liblog.so",
+    "libm.so",
+    "libvndksupport.so"
+  ],
+  "libraries": [
+    {
+      "name": "android.hardware.sensors@1.0.so",
+      "sha256": "813148dfb87b463cfb8182826df43eecae13bb2607781c0d97aefb51c6e10099",
+      "size": 153328,
+      "needed": [
+        "libhidlbase.so",
+        "liblog.so",
+        "libutils.so",
+        "libcutils.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libbase.so",
+      "sha256": "bb4f192ad7c8585b2715327f4fbb50cedcad242e6a8eaca8576a917670e10934",
+      "size": 218672,
+      "needed": [
+        "liblog.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libcutils.so",
+      "sha256": "de9324e7e993cbb44524bfe671e7c5279355c96e31b00cf24f2f6a9f83ebf56b",
+      "size": 118264,
+      "needed": [
+        "liblog.so",
+        "libbase.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libhidlbase.so",
+      "sha256": "8eb49abe14359c8829bde0cc2e7ae781e131bde2eb75e1743fa7799298e63313",
+      "size": 669960,
+      "needed": [
+        "libbase.so",
+        "liblog.so",
+        "libutils.so",
+        "libcutils.so",
+        "libvndksupport.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libhidltransport.so",
+      "sha256": "a2f9cb571ed0fa83037d3fe204184def6e93c335c555a31359a7389134c14a77",
+      "size": 35256,
+      "needed": [
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libhwbinder.so",
+      "sha256": "64256db932dcfcc61a277de58fbaece26589564e9c7c594e23563194395ee4d4",
+      "size": 35256,
+      "needed": [
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libprotobuf-cpp-lite-21.12.so",
+      "sha256": "0b503ef8b1760bd18f7dd3175f2b7760fc06f0d213cc19b60a4b38fe41fcb901",
+      "size": 591992,
+      "needed": [
+        "liblog.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libqmi_cci.so",
+      "sha256": "536d31e6677782e29be1a53e14016a0685c2a6d543d32dbcef6e9604c674b996",
+      "size": 102216,
+      "needed": [
+        "libcutils.so",
+        "libutils.so",
+        "libqmi_encdec.so",
+        "liblog.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libqmi_common_so.so",
+      "sha256": "39826f9ce26d619234468756744d19796758c7e23a9d889502983ac0eea8fe44",
+      "size": 51408,
+      "needed": [
+        "libcutils.so",
+        "libutils.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libqmi_encdec.so",
+      "sha256": "c22371d0a504c1664cda514b410d85826ba6ed79b59d87b4bc4ca9523bc9618e",
+      "size": 52016,
+      "needed": [
+        "libcutils.so",
+        "libutils.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libqsh.so",
+      "sha256": "aa27ebb814ff973bf67c160920ee67ee24830b53d82281d892044f7dd3b0ba81",
+      "size": 103496,
+      "needed": [
+        "libprotobuf-cpp-lite-21.12.so",
+        "liblog.so",
+        "libcutils.so",
+        "libutils.so",
+        "libqmi_common_so.so",
+        "libqmi_cci.so",
+        "libqmi_encdec.so",
+        "libsnsutils.so",
+        "libsnsapi.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libsensorapi_vendor.so",
+      "sha256": "d2fae8381ffd3cfccaae090abd15265faad3be910b5ff66d34a354509a64c134",
+      "size": 51688,
+      "needed": [
+        "liblog.so",
+        "libutils.so",
+        "libcutils.so",
+        "libhidlbase.so",
+        "libhidltransport.so",
+        "libhwbinder.so",
+        "android.hardware.sensors@1.0.so",
+        "libbase.so",
+        "libsensorcal_vendor_vendor.so",
+        "libsns_set_brightness_vendor.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libsensorcal_vendor_vendor.so",
+      "sha256": "b9e708ea0c0e55ecb03577bcbc74ee0e2c9262e39073d5aa5ca8cd9837233403",
+      "size": 85528,
+      "needed": [
+        "libutils.so",
+        "libprotobuf-cpp-lite-21.12.so",
+        "libsnsapi.so",
+        "libsnsutils.so",
+        "libcutils.so",
+        "liblog.so",
+        "libqsh.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libsns_set_brightness_vendor.so",
+      "sha256": "13f2c4463ac47f46c31247d8e75b76f33230c64c0114b48763ab11a0a637c6e5",
+      "size": 52128,
+      "needed": [
+        "libutils.so",
+        "libprotobuf-cpp-lite-21.12.so",
+        "libsnsutils.so",
+        "libsnsapi.so",
+        "libcutils.so",
+        "liblog.so",
+        "libqsh.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libsnsapi.so",
+      "sha256": "111d8f2bd9f903fc667bc38bbadc25e3e901c9dfc1e4716fb391bfed78af82cb",
+      "size": 1280816,
+      "needed": [
+        "libprotobuf-cpp-lite-21.12.so",
+        "libcutils.so",
+        "libutils.so",
+        "libqmi_common_so.so",
+        "libqmi_cci.so",
+        "libqmi_encdec.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libsnsutils.so",
+      "sha256": "28304394629f88fe7a666c99e417d26a316b6b3292b5b7e7d21ea22ec35c5317",
+      "size": 85760,
+      "needed": [
+        "libutils.so",
+        "libcutils.so",
+        "liblog.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    },
+    {
+      "name": "libutils.so",
+      "sha256": "de32f694b39f815a0d2cf0ebd93d4dcea2148d4f5225e9384851a7bf2e6e0bf9",
+      "size": 151280,
+      "needed": [
+        "libcutils.so",
+        "liblog.so",
+        "libvndksupport.so",
+        "libc++.so",
+        "libc.so",
+        "libm.so",
+        "libdl.so"
+      ]
+    }
+  ]
+}

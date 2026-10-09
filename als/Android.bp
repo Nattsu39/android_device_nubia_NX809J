@@ -1,0 +1,22 @@
+// Copyright (C) 2026 The Avium Project
+// SPDX-License-Identifier: Apache-2.0
+
+cc_binary {
+    name: "nx809j-als-content-service",
+    srcs: ["AlsContentService.cpp"],
+    system_ext_specific: true,
+    compile_multilib: "64",
+    init_rc: ["nx809j-als-content-service.rc"],
+    shared_libs: ["libbinder", "libutils", "libbase", "liblog", "libdl", "libdl_android"],
+    cflags: ["-Wall", "-Wextra", "-Werror"],
+    cpp_std: "c++17",
+}
+
+cc_test_host {
+    name: "nx809j-als-queue-test",
+    srcs: ["tests/LatestLcdQueueTest.cpp"],
+    local_include_dirs: ["."],
+    gtest: false,
+    cflags: ["-Wall", "-Wextra", "-Werror", "-UNDEBUG"],
+    cpp_std: "c++17",
+}

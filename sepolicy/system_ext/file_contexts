@@ -32,3 +32,7 @@
 
 # Same tightly scoped health HAL access for the independent battery gate.
 /sys/class/qcom-battery/battery_charging_enabled    u:object_r:sysfs_batt_charge_control:s0
+
+# Sensor-only ALS sender and its isolated, pinned dependency closure.
+/system_ext/bin/nx809j-als-content-service    u:object_r:nx809j_als_exec:s0
+/system_ext/lib64/nx809j-als(/.*)?    u:object_r:nx809j_als_lib_file:s0

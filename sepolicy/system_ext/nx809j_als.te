@@ -1,0 +1,36 @@
+# Copyright (C) 2026 The Avium Project
+# SPDX-License-Identifier: Apache-2.0
+
+type nx809j_als, domain, coredomain;
+type nx809j_als_exec, exec_type, system_file_type, file_type;
+type nx809j_als_lib_file, system_file_type, file_type;
+type nx809j_als_service, service_manager_type;
+
+init_daemon_domain(nx809j_als)
+binder_use(nx809j_als)
+add_service(nx809j_als, nx809j_als_service)
+binder_call(system_server, nx809j_als)
+allow system_server nx809j_als_service:service_manager find;
+
+# Diagnostics only. The service rejects non-system UID parameter/control calls.
+binder_call(shell, nx809j_als)
+allow shell nx809j_als_service:service_manager find;
+
+# A fixed sensor-only library closure copied from the existing vendor input.
+# No vendor_file execute permission and no generic vendor namespace access.
+allow nx809j_als nx809j_als_lib_file:dir r_dir_perms;
+allow nx809j_als nx809j_als_lib_file:file { read open getattr execute map };
+
+# QSH uses QRTR/QMI to reach the sensor processor. No modem Binder/HIDL service,
+# device-node write, network access or sensor calibration-file write is granted.
+allow nx809j_als self:{ socket qipcrtr_socket } create_socket_perms;
+allowxperm nx809j_als self:{ socket qipcrtr_socket } ioctl msm_sock_ipc_ioctls_system;
+wakelock_use(nx809j_als)
+
+# Sender helper traversal/status queries. Exact backlight/ACL reads are made by
+# system_server using existing stock grants, not by this domain.
+allow nx809j_als sysfs_type:dir search;
+allow nx809j_als sysfs:lnk_file read;
+
+system_internal_prop(nx809j_als_prop)
+get_prop(system_server, nx809j_als_prop)
