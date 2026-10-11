@@ -1,6 +1,5 @@
 # ViPER4Android RE — ROM bake (include from device.mk:  $(call inherit-product, device/nubia/NX809J/audio/viper4android/viper4android.mk))
 PRODUCT_PACKAGES += \
-    ViPER4Android \
     libv4a_aidl
 
 # Effect declaration is MERGED into the vendor audio_effects_config at vendor-repack time

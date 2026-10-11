@@ -380,6 +380,8 @@ VENDOR_SECURITY_PATCH := 2025-11-01
 # SEPolicy.mk include — this flag changes how vendor sepolicy is assembled.
 TARGET_USES_PREBUILT_VENDOR_SEPOLICY := true
 include device/qcom/sepolicy_vndr/SEPolicy.mk
+# Include the SM8850 system-side policy required by the stock QTI services.
+include device/qcom/sepolicy_vndr/sm8750/SEPolicy.mk
 BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy
 # System-side coredomain for the re-homed (/system_ext) lineage health HAL.
 SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/system_ext
@@ -534,3 +536,6 @@ WIFI_HIDL_FEATURE_AWARE := true
 WIFI_HIDL_FEATURE_DUAL_INTERFACE := true
 WIFI_HIDL_UNIFIED_SUPPLICANT_SERVICE_RC_ENTRY := true
 WPA_SUPPLICANT_VERSION := VER_0_8_X
+
+# Preserve the OEM ODM services without the unimplemented eSE1 instance.
+ODM_MANIFEST_FILES += $(DEVICE_PATH)/vintf/manifest_odm.xml

@@ -37,6 +37,17 @@ def checked_directory(path: Path) -> Path:
 
 def merge_configs(device_tree: Path, compiled_odm: Path, odm_root: Path,
                   verify_only: bool = False) -> None:
+    # The full reviewed manifest is a source input. Packaging installs it as-is
+    # and keeps the OEM metadata, without editing XML fragments during a build.
+    manifest = regular_file(odm_root / "etc/vintf/manifest.xml")
+    expected_manifest = regular_file(device_tree / "vintf/manifest_odm.xml").read_bytes()
+    manifest_metadata = manifest.stat()
+    if not verify_only and manifest.read_bytes() != expected_manifest:
+        manifest.write_bytes(expected_manifest)
+        os.utime(manifest, ns=(manifest_metadata.st_atime_ns, manifest_metadata.st_mtime_ns))
+    if manifest.read_bytes() != expected_manifest:
+        raise ValueError("ODM VINTF manifest differs from the reviewed source")
+
     init_dir = checked_directory(checked_directory(odm_root / "etc") / "init")
     reference = regular_file(init_dir / "init.NX809J.rc")
     directory_metadata = init_dir.stat()

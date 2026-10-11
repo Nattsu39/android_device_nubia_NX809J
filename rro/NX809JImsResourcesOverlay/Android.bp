@@ -1,0 +1,7 @@
+// For reversible deployment on an existing ROM. Full builds use the static overlay.
+runtime_resource_overlay {
+    name: "NX809JImsResourcesOverlay",
+    certificate: "platform",
+    sdk_version: "current",
+    product_specific: true,
+}

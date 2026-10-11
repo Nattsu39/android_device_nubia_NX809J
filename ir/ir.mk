@@ -1,3 +1,1 @@
-# Nubia IR remote app (IR HAL/feature already on-device; only the app was missing)
-PRODUCT_PACKAGES += \
-    InfraredCoolControl
+# The OEM IR application is not included in the build inputs.

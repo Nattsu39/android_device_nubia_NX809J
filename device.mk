@@ -68,29 +68,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     ShowAppHandleOverlay
 
-# Desktop environment: MagicDesk (third-party, MIT) + Shizuku, its only privilege transport.
-# Ordinary presigned /product/app apps, deliberately NOT privileged and NOT platform-signed —
-# MagicDesk asks its own shell service for everything, never the platform. Kept updatable so users
-# can take upstream releases directly. Provenance, checksums, the audit of why Shizuku is required,
-# and the internal-display/app-handle interaction are all in desktop/README.md.
-# Guarded: the two APKs are third-party release binaries and are .gitignore'd, so a fresh clone of
-# this tree does NOT contain them. Without this guard the build fails on a missing source for anyone
-# who clones and builds. Drop the two APKs into desktop/ (checksums and download links are in
-# desktop/README.md) and they are picked up automatically.
-ifneq ($(wildcard $(LOCAL_PATH)/desktop/MagicDesk.apk),)
-PRODUCT_PACKAGES += \
-    MagicDesk \
-    Shizuku
-else
-$(warning NX809J: desktop/MagicDesk.apk absent - building without MagicDesk/Shizuku. See desktop/README.md)
-endif
-
-# OpenEUICC — privileged eSIM LPA (Local Profile Assistant) for the internal
-# removable eUICC. Builds from packages/apps/OpenEUICC as a platform-signed
-# system_ext priv-app (+ liblpac-jni native + privapp permission whitelist).
-PRODUCT_PACKAGES += \
-    OpenEUICC
-
 # Bluetooth classic profiles. The closure build shipped ONLY the LE-Audio
 # profile defaults; every classic profile (A2DP source, HFP AG, AVRCP, GATT,
 # HID, PAN, MAP, PBAP, OPP) was unset, so no classic profile service started
@@ -642,5 +619,3 @@ PRODUCT_PACKAGES += \
 
 $(call inherit-product-if-exists, device/nubia/NX809J/audio/viper4android/viper4android.mk)
 $(call inherit-product-if-exists, device/nubia/NX809J/ir/ir.mk)
-
-PRODUCT_COPY_FILES += \

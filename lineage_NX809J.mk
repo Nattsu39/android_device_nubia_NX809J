@@ -30,3 +30,10 @@ PRODUCT_GMS_CLIENTID_BASE := android-zte
 # PRODUCT_BUILD_PROP_OVERRIDES removed — TARGET_DEVICE/TARGET_PRODUCT are not valid override keys
 
 BUILD_FINGERPRINT := nubia/NX809J/NX809J:16/BP2A.250605.031.A3/V11.0.16:user/release-keys
+
+# ---- AviumUI (移植自 LineageOS NX809J 设备树) ----
+AVIUM_MAINTAINER := Nattsu39
+AVIUM_SETTINGS_SOC_MODEL_NAME := Snapdragon 8 Elite Gen 5
+AVIUM_SETTINGS_DEVICE_CODENAME := canoe
+# AVIUM_SETTINGS_SOC_MODEL_NAME 如需其他取值,参考 AviumUI 文档
+# WITH_GMS := false   # 如需 GMS,设 true(或事后刷 MindTheGapps)

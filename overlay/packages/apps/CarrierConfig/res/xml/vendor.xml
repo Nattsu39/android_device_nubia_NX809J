@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<carrier_config_list>
+    <!-- Replace IMS availability debug overrides for the validated China Unicom SIM. -->
+    <carrier_config mcc="460" mnc="01">
+        <boolean name="carrier_volte_available_bool" value="true" />
+        <boolean name="carrier_vt_available_bool" value="true" />
+        <boolean name="carrier_wfc_ims_available_bool" value="true" />
+        <boolean name="carrier_default_wfc_ims_enabled_bool" value="false" />
+        <boolean name="vonr_enabled_bool" value="true" />
+        <int-array name="carrier_nr_availabilities_int_array" num="2">
+            <item value="1" />
+            <item value="2" />
+        </int-array>
+    </carrier_config>
+</carrier_config_list>

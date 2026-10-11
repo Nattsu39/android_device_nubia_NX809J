@@ -8,12 +8,9 @@
 # STATUS (2026-06-23): these 6 source-build CLEANLY from the qcom-caf namespaces
 # and now land in vendor.img (verified). They pull their lib deps transitively.
 PRODUCT_PACKAGES += \
-    android.hardware.health-service.qti \
     android.hardware.sensors-service.multihal \
-    android.hardware.usb-service.qti \
     audiohalservice.qti \
-    vendor.qti.hardware.memtrack-service \
-    vendor.qti.hardware.vibrator.service
+    vendor.qti.hardware.memtrack-service
 
 # ============================================================================
 # DISPLAY HALs — ALL-STOCK (2026-07-11). The source composer + stock SDM hybrid
