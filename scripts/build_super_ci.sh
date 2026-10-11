@@ -1,11 +1,10 @@
 #!/bin/bash
 # build_super_ci.sh — assemble the NX809J flashable super.img for CI.
 #
-# HYBRID by design (see device/nubia/NX809J/.github/README-CI.md "Audit"):
-#   FROM SOURCE  (this build, reproducible): system, system_ext, product
-#   MANUAL/STOCK (not source-reproducible yet): vendor (stock B13MR + enforcing CIL
-#                + ultrawide .so patch), odm (curated), vendor_dlkm + system_dlkm (stock).
-# Geometry is the fixed NX809J super layout (build_super_v37.sh lineage).
+# system, system_ext and product come from the current source build.
+# vendor and both DLKM inputs come from the fixed official firmware.
+# ODM retains OEM files and adds the committed control/camera payload.
+# Geometry is the fixed NX809J virtual A/B super layout.
 #
 # All inputs overridable via env so the workflow can point at signed images.
 set -euo pipefail
@@ -19,9 +18,9 @@ SCRATCH="${SCRATCH:-/var/home/beast/lineage-scratch}"
 SYS="${SYS:-$OUT/system.img}"
 SEXT="${SEXT:-$OUT/system_ext.img}"
 PROD="${PROD:-$OUT/product.img}"
-# --- non-source (stable, hand-built) inputs ---
-VEN="${VEN:-$SCRATCH/uw_super/vendor_uw.img}"          # stock vendor + enforcing CIL + ultrawide .so patch
-ODM="${ODM:-$SCRATCH/uw_super/odm_uw.img}"             # curated odm
+# --- retained official firmware inputs (override for the portable build) ---
+VEN="${VEN:-$SCRATCH/uw_super/vendor_uw.img}"          # retained official vendor
+ODM="${ODM:-$SCRATCH/uw_super/odm_uw.img}"             # retained official ODM
 VDLKM="${VDLKM:-$SCRATCH/ci_inputs/vendor_dlkm.img}"   # stock dlkm (matches WildKernels kernel modules)
 SDLKM="${SDLKM:-$SCRATCH/ci_inputs/system_dlkm.img}"
 
@@ -47,8 +46,8 @@ echo "== NX809J super inputs =="
 printf "  %-14s %s\n" system      "$SYS ($(du -h "$SYS"|cut -f1), SOURCE)"
 printf "  %-14s %s\n" system_ext  "$SEXT ($(du -h "$SEXT"|cut -f1), SOURCE)"
 printf "  %-14s %s\n" product     "$PROD ($(du -h "$PROD"|cut -f1), SOURCE)"
-printf "  %-14s %s\n" vendor      "$VEN ($(du -h "$VEN"|cut -f1), STOCK+enf+uw)"
-printf "  %-14s %s\n" odm         "$ODM ($(du -h "$ODM"|cut -f1), curated)"
+printf "  %-14s %s\n" vendor      "$VEN ($(du -h "$VEN"|cut -f1), retained OEM)"
+printf "  %-14s %s\n" odm         "$ODM ($(du -h "$ODM"|cut -f1), OEM plus compiled payload)"
 printf "  %-14s %s\n" vendor_dlkm "$VDLKM ($(du -h "$VDLKM"|cut -f1), stock)"
 printf "  %-14s %s\n" system_dlkm "$SDLKM ($(du -h "$SDLKM"|cut -f1), stock)"
 

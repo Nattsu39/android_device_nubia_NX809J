@@ -5,7 +5,7 @@ reflects what a user flashing fresh would get — not the accumulated runtime st
 the dev unit). `[ ]` = test, `[!]` = known-not-working (document, don't flag as regression).
 
 ## 0. Build / boot integrity (gate)
-- [ ] Clean `repo sync` + `apply-patches.sh` (or forks) + build with **no** manual runtime steps
+- [ ] Sync the fixed source manifest and build with **no** manual source patches or runtime steps
 - [ ] First boot to UI, no bootloop; second (warm) reboot clean
 - [ ] `logcat`/`dmesg` has **no** SE/IFAA crash-loop and **no** `updatable_crashing` / RescueParty storm
 - [ ] No *new* persistent AVC denials beyond the known stock-vendor cascade (permissive)

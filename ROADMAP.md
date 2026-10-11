@@ -32,9 +32,8 @@ Prereqs / notes:
   on-device self-calibration (Goodix no-chart opcode 5634) instead of the shipped cal.
 - **Multi-carrier VoLTE** — CarrierConfig is Zain-KW (41902)-specific; add overlays for
   other carriers as needed.
-- **IronShing forks** (optional) — the out-of-tree fixes are already durable via
-  `patches/` + `apply-patches.sh`; forking frameworks/base / vendor/lineage / CarrierConfig
-  to IronShing is nicer-but-optional polish (see `patches/README.md`).
+- **Committed source fixes** — the active Avium port uses fixed Nattsu39 source
+  revisions. Build-time patch inputs have been retired; see `BUILD_SOURCES.md`.
 - **SELinux enforcing** — NOT planned: blocked by the stock-vendor denial cascade
   (unpatchable on a stock-vendor ride). Ships permissive; SUSFS (v2) makes it moot for
   app integrity. See memory enforcing_charging_hal_blocker.
