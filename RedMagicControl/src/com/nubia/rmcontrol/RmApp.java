@@ -42,10 +42,6 @@ public class RmApp extends Application {
         // Nothing happens unless the user picks a mode (persist.sys.rm.slider.mode).
         SliderWatcher.start(this);
 
-        // Bundled MagicDesk needs display-over-apps. Doing it here saves it asking Shizuku for
-        // something we can grant directly; it is a no-op once the op has any explicit value.
-        DesktopIntegration.grantOverlayOpIfUntouched(this);
-
         final ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         if (cm == null) {
             Log.e(TAG, "no ConnectivityManager; offline-doze will not track network changes");

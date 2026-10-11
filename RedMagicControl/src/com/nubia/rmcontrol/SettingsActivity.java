@@ -374,12 +374,6 @@ public class SettingsActivity extends Activity {
                 + "A monitor plugged into USB-C does not need this: external displays get desktop "
                 + "windowing either way.");
 
-        if (DesktopIntegration.isInstalled(this, DesktopIntegration.MAGICDESK_PKG)) {
-            note(root, "MagicDesk is installed. It needs Shizuku running to do anything — open "
-                    + "Shizuku and use Start via root (this ROM has root, so you can skip the "
-                    + "wireless-debugging pairing in their instructions). MagicDesk is a separate "
-                    + "open-source project; report its bugs to that project, not to this ROM.");
-        }
     }
 
     // ---------- reusable ----------

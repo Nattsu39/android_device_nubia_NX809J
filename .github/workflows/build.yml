@@ -1,6 +1,6 @@
 name: Build NX809J
 
-# Self-hosted CI for the RedMagic 11 Pro (NX809J) LineageOS 23.2 port.
+# Self-hosted CI for the NX809J source build, using the portable source lock.
 # Runs on a self-hosted runner on the build machine (where the ~268 GB tree lives) —
 # GitHub-hosted runners can't build LOS (disk/time). Operates on the EXISTING tree at
 # $LINEAGE; it does NOT git-checkout this repo (no actions/checkout on purpose).
@@ -45,6 +45,10 @@ jobs:
     timeout-minutes: 900
     env:
       LINEAGE:    ${{ vars.LINEAGE_TREE  || '/var/home/beast/android/lineage' }}
+      PORT_SCRIPT: ${{ vars.NX809J_PORT_SCRIPT || '/root/port_nx809j_avium.sh' }}
+      RELEASE_DIR: ${{ vars.NX809J_RELEASE_DIR || '/root/nx809-fw-0823' }}
+      JOBS: 6
+      SKIP_MINSDK: 1
       SUPER_SCRIPT: ${{ vars.SUPER_SCRIPT || format('{0}/device/nubia/NX809J/scripts/build_super_ci.sh', vars.LINEAGE_TREE || '/var/home/beast/android/lineage') }}
       KEYS_DIR:   ${{ vars.KEYS_DIR || 'vendor/lineage-priv/keys' }}
       LUNCH:      ${{ vars.LUNCH || 'lineage_NX809J-bp4a-userdebug' }}
@@ -55,27 +59,29 @@ jobs:
       - name: Environment
         run: |
           echo "tree=$LINEAGE  lunch=$LUNCH"
+          test -f "$PORT_SCRIPT"
           df -h "$LINEAGE" | tail -1; free -g | sed -n '1,2p'; nproc
 
       - name: repo sync (optional)
         if: ${{ inputs.reposync }}
         run: |
-          cd "$LINEAGE"
-          repo sync -j"$(nproc)" -c --no-clone-bundle --current-branch --force-sync
-          # The manifest pins the reviewed port fixes in their source repositories.
+          AVIUM_TREE="$LINEAGE" bash "$PORT_SCRIPT" sync
 
       - name: Build partitions
         run: |
           cd "$LINEAGE"
           set -o pipefail
+          AVIUM_TREE="$LINEAGE" bash "$PORT_SCRIPT" build
           source build/envsetup.sh
           unset -f grep egrep fgrep ugrep 2>/dev/null || true   # ugrep wrapper breaks soong dumpvars
           lunch "$LUNCH"                                         # never pipe (subshell drops TARGET_RELEASE)
           MT="${{ inputs.target }}"
           if [ -z "$MT" ] && [ "${{ inputs.dist }}" = "true" ]; then MT="dist"; fi
           # sandbox-off + nice + -j6 (higher -j OOMs the box)
-          nice -n 19 ionice -c3 env NINJA_HIGHMEM_NUM_JOBS=2 \
-            m -j6 $MT 2>&1 | tail -n 400
+          if [ -n "$MT" ]; then
+            nice -n 19 ionice -c3 env NINJA_HIGHMEM_NUM_JOBS=2 \
+              m -j6 $MT 2>&1 | tail -n 400
+          fi
           echo "OUT=$LINEAGE/out/target/product/$DEVICE" >> "$GITHUB_ENV"
           echo "DIST=$LINEAGE/out/dist" >> "$GITHUB_ENV"
           echo "HOSTBIN=$LINEAGE/out/host/linux-x86/bin" >> "$GITHUB_ENV"
@@ -147,4 +153,4 @@ jobs:
           gh release create "${{ steps.pkg.outputs.tag }}" "${{ steps.pkg.outputs.dir }}"/* \
             --repo "${{ github.repository }}" \
             --title "NX809J ${{ steps.pkg.outputs.tag }}" \
-            --notes $'Automated self-hosted LineageOS 23.2 build.\n\nReassemble super: `cat super.img.zst.part* | zstd -d -o super.img`\nVerify: `md5sum -c MD5SUMS.txt` (after reassembling super).\nFlash: EDL super + boot chain — see INSTALL/CHANGELOG.\n\nSuper is a source+stock-vendor hybrid; boot is the prebuilt WildKernels kernel. See README-CI.md.'
+            --notes $'Automated NX809J source build.\n\nReassemble super: `cat super.img.zst.part* | zstd -d -o super.img`\nVerify: `md5sum -c MD5SUMS.txt` (after reassembling super).\nDeployment requires the verified SuperFastboot mode and project partition checks.\n\nSuper combines source system partitions with fixed vendor inputs. See README-CI.md.'
