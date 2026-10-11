@@ -1,8 +1,6 @@
 // Copyright (C) 2026 The Avium Project
 // SPDX-License-Identifier: Apache-2.0
 
-#include "PhysicalCameraMetadata.h"
-
 #include <gtest/gtest.h>
 #include <system/camera_metadata.h>
 
@@ -10,27 +8,31 @@
 #include <iterator>
 #include <memory>
 
+#include "PhysicalCameraMetadata.h"
+
 namespace nx809j::camera {
 namespace {
 
 using Metadata = std::unique_ptr<camera_metadata_t, decltype(&free_camera_metadata)>;
 
 std::vector<uint8_t> makeMetadata(const std::vector<uint8_t>& physicalIds,
-                                uint8_t facing = ANDROID_LENS_FACING_BACK) {
+                                  uint8_t facing = ANDROID_LENS_FACING_BACK) {
     Metadata metadata(allocate_camera_metadata(8, 128), free_camera_metadata);
     EXPECT_NE(metadata, nullptr);
     const uint8_t capabilities[] = {
-            ANDROID_REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE,
-            ANDROID_REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA,
+        ANDROID_REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE,
+        ANDROID_REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA,
     };
     const int32_t orientation = 90;
     EXPECT_EQ(add_camera_metadata_entry(metadata.get(), ANDROID_LENS_FACING, &facing, 1), 0);
-    EXPECT_EQ(add_camera_metadata_entry(metadata.get(), ANDROID_SENSOR_ORIENTATION,
-                                      &orientation, 1), 0);
+    EXPECT_EQ(
+        add_camera_metadata_entry(metadata.get(), ANDROID_SENSOR_ORIENTATION, &orientation, 1), 0);
     EXPECT_EQ(add_camera_metadata_entry(metadata.get(), ANDROID_REQUEST_AVAILABLE_CAPABILITIES,
-                                      capabilities, std::size(capabilities)), 0);
+                                        capabilities, std::size(capabilities)),
+              0);
     EXPECT_EQ(add_camera_metadata_entry(metadata.get(), ANDROID_LOGICAL_MULTI_CAMERA_PHYSICAL_IDS,
-                                      physicalIds.data(), physicalIds.size()), 0);
+                                        physicalIds.data(), physicalIds.size()),
+              0);
     const auto* bytes = reinterpret_cast<const uint8_t*>(metadata.get());
     return {bytes, bytes + get_camera_metadata_size(metadata.get())};
 }
@@ -43,8 +45,10 @@ FacingResolver publicFacing = [](const std::string& id) -> std::optional<uint8_t
 
 std::vector<uint8_t> physicalIds(const std::vector<uint8_t>& bytes) {
     camera_metadata_ro_entry_t entry;
-    EXPECT_EQ(find_camera_metadata_ro_entry(reinterpret_cast<const camera_metadata_t*>(bytes.data()),
-                                           ANDROID_LOGICAL_MULTI_CAMERA_PHYSICAL_IDS, &entry), 0);
+    EXPECT_EQ(
+        find_camera_metadata_ro_entry(reinterpret_cast<const camera_metadata_t*>(bytes.data()),
+                                      ANDROID_LOGICAL_MULTI_CAMERA_PHYSICAL_IDS, &entry),
+        0);
     return {entry.data.u8, entry.data.u8 + entry.count};
 }
 

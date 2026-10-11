@@ -7,8 +7,7 @@
 
 namespace nx809j::camera {
 
-std::shared_ptr<aidl::android::hardware::camera::provider::ICameraProvider>
-wrapCameraProvider(const std::shared_ptr<aidl::android::hardware::camera::provider::ICameraProvider>&
-                           provider);
+std::shared_ptr<aidl::android::hardware::camera::provider::ICameraProvider> wrapCameraProvider(
+    const std::shared_ptr<aidl::android::hardware::camera::provider::ICameraProvider>& provider);
 
 }  // namespace nx809j::camera

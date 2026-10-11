@@ -5,17 +5,27 @@ cc_library_shared {
     name: "libnx809j_camera_provider",
     device_specific: true,
     compile_multilib: "64",
-    srcs: ["CameraProviderAdapter.cpp", "CameraProviderRegistration.cpp", "PhysicalCameraMetadata.cpp"],
+    srcs: [
+        "CameraProviderAdapter.cpp",
+        "CameraProviderRegistration.cpp",
+        "CameraIdMapping.cpp",
+        "CameraResultAdapter.cpp",
+        "CameraSessionAdapter.cpp",
+        "PhysicalCameraMetadata.cpp",
+    ],
     shared_libs: [
         "android.hardware.camera.provider-V3-ndk",
         "android.hardware.camera.device-V3-ndk",
         "libbinder_ndk",
         "libcamera_metadata",
         "libdl",
+        "libfmq",
+        "libbase",
+        "libcutils",
         "liblog",
     ],
     cflags: ["-Wall", "-Wextra", "-Werror", "-fvisibility=hidden"],
-    cpp_std: "c++17",
+    cpp_std: "c++20",
 }
 
 cc_test {
@@ -25,22 +35,34 @@ cc_test {
     shared_libs: ["libcamera_metadata"],
     compile_multilib: "64",
     cflags: ["-Wall", "-Wextra", "-Werror"],
-    cpp_std: "c++17",
+    cpp_std: "c++20",
 }
 
 cc_test {
     name: "nx809j-camera-provider-test",
     device_specific: true,
     compile_multilib: "64",
-    srcs: ["CameraProviderAdapter.cpp", "PhysicalCameraMetadata.cpp", "tests/CameraProviderAdapterTest.cpp"],
+    srcs: [
+        "CameraProviderAdapter.cpp",
+        "CameraIdMapping.cpp",
+        "CameraResultAdapter.cpp",
+        "CameraSessionAdapter.cpp",
+        "PhysicalCameraMetadata.cpp",
+        "tests/CameraProviderAdapterTest.cpp",
+        "tests/CameraResultAdapterTest.cpp",
+        "tests/CameraSessionAdapterTest.cpp",
+    ],
     local_include_dirs: ["."],
     shared_libs: [
         "android.hardware.camera.provider-V3-ndk",
         "android.hardware.camera.device-V3-ndk",
         "libbinder_ndk",
         "libcamera_metadata",
+        "libfmq",
+        "libbase",
+        "libcutils",
         "liblog",
     ],
     cflags: ["-Wall", "-Wextra", "-Werror"],
-    cpp_std: "c++17",
+    cpp_std: "c++20",
 }

@@ -16,7 +16,7 @@
     <bool name="config_enableDisplayCutoutProtection">true</bool>
     <bool name="config_enableCameraProtectionWithoutCutout">true</bool>
     <integer name="config_cameraProtectionAnimationDuration">0</integer>
-    <string name="config_protectedCameraId" translatable="false">3</string>
+    <string name="config_protectedCameraId" translatable="false">1</string>
     <string name="config_cameraProtectionExcludedPackages" translatable="false"></string>
     <string name="config_frontBuiltInDisplayCutoutProtection" translatable="false">
         M 566,70 a 42,42 0 1 0 84,0 a 42,42 0 1 0 -84,0 Z

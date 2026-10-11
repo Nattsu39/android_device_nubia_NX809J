@@ -1,9 +1,6 @@
 # Copyright (C) 2026 The LineageOS Project
 # SPDX-License-Identifier: Apache-2.0
 
-# Camera1 index consumed by the platform-signed Sense service.
-ro.face.sense_service.camera_id u:object_r:nx809j_face_camera_prop:s0 exact int
-
 # DT2W arm-request bridge: the dt2w_uewake coredomain daemon pulses this 0->1 to
 # ask the odm/vendor_init dt2w_uewake.rc action to write the vendor syna_proc
 # gesture node. dt2w_uewake sets it; init reads/triggers on it. See dt2w_uewake.te.

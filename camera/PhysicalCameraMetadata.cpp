@@ -16,7 +16,7 @@ using Metadata = std::unique_ptr<camera_metadata_t, decltype(&free_camera_metada
 Metadata copyMetadata(const std::vector<uint8_t>& bytes) {
     if (bytes.empty()) return {nullptr, free_camera_metadata};
     return {allocate_copy_camera_metadata_checked(
-                    reinterpret_cast<const camera_metadata_t*>(bytes.data()), bytes.size()),
+                reinterpret_cast<const camera_metadata_t*>(bytes.data()), bytes.size()),
             free_camera_metadata};
 }
 
@@ -44,12 +44,14 @@ bool filterPhysicalCameraIds(std::vector<uint8_t>* bytes, const FacingResolver& 
 
     camera_metadata_ro_entry_t capabilities, ids;
     if (find_camera_metadata_ro_entry(metadata.get(), ANDROID_REQUEST_AVAILABLE_CAPABILITIES,
-                                      &capabilities) != 0 || capabilities.type != TYPE_BYTE ||
+                                      &capabilities) != 0 ||
+        capabilities.type != TYPE_BYTE ||
         std::find(capabilities.data.u8, capabilities.data.u8 + capabilities.count,
                   ANDROID_REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA) ==
-                capabilities.data.u8 + capabilities.count ||
+            capabilities.data.u8 + capabilities.count ||
         find_camera_metadata_ro_entry(metadata.get(), ANDROID_LOGICAL_MULTI_CAMERA_PHYSICAL_IDS,
-                                      &ids) != 0 || ids.type != TYPE_BYTE || ids.count == 0) {
+                                      &ids) != 0 ||
+        ids.type != TYPE_BYTE || ids.count == 0) {
         return false;
     }
 
@@ -71,8 +73,8 @@ bool filterPhysicalCameraIds(std::vector<uint8_t>* bytes, const FacingResolver& 
     // A logical camera must retain at least two physical devices. Leave
     // unexpected metadata alone instead of advertising an invalid group.
     if (retained.size() == ids.count || retainedCount < 2) return false;
-    if (update_camera_metadata_entry(metadata.get(), ids.index, retained.data(),
-                                    retained.size(), nullptr) != 0) {
+    if (update_camera_metadata_entry(metadata.get(), ids.index, retained.data(), retained.size(),
+                                     nullptr) != 0) {
         return false;
     }
     const auto* data = reinterpret_cast<const uint8_t*>(metadata.get());

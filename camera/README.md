@@ -1,36 +1,55 @@
-# NX809J camera metadata compatibility
+# NX809J camera compatibility
 
 The OEM provider exposes rear logical camera `0` with physical IDs `2`, `1`,
-and front camera `3`. Android's unmodified Camera1 logical-camera filtering
-therefore hides the front camera. Sense also passes its Camera2 ID to Camera1
-unless its existing camera-index property is set.
+and front camera `3`. Android's Camera1 logical-camera filtering consequently
+hides the front camera. Sense uses its front Camera2 ID both as a Camera1 index
+and in Camera2 availability callbacks. Filtering the group and overriding the
+index alone fixes camera opening but leaves authentication waiting for a
+different Camera2 ID.
 
-This device tree builds an ODM library and an init service override. The
-override retains the OEM executable, identity, scheduling, and all four AIDL
-registrations. Its scoped preload wraps only the Android camera provider
-registration. Generated AIDL delegators forward provider/device operations,
-sessions, callbacks, errors, dumps, and Binder extensions to the OEM objects.
+The device tree builds an ODM library and an init override for the retained
+OEM camera provider. The scoped preload wraps only registration of the standard
+`vendor_qti/0` provider. The executable, service identity, scheduling, four AIDL
+registrations, proprietary extensions, and vendor inputs are retained.
+Provider, device, session, callback, offline, and injection adapters use the
+frozen AIDL V3 interfaces implemented by this firmware.
 
-Only the returned `android.logicalMultiCamera.physicalIds` entry is adapted:
-public physical devices with a different facing are excluded. Hidden physical
-devices, unrelated metadata, and the OEM provider's internal metadata remain
-unchanged. Malformed or unsupported metadata is preserved. At least two
-physical devices must remain in a logical group. The adapter requires the
-frozen provider/device AIDL V3 interfaces already used by this firmware.
+The standard public IDs `1` and `3` are swapped. Public ID `1` becomes the front
+camera and matches Camera1 index `1`; public ID `3` is the former rear auxiliary
+camera `1`. The rear logical group's physical-ID list excludes the opposite
+facing front camera and becomes public IDs `2`, `3`. Hidden physical devices
+whose facing cannot be queried are retained; a logical group must keep at least
+two physical devices. Malformed metadata is preserved.
 
-The resulting Camera1 list is `0 -> ID0`, `1 -> ID3`. The system_ext property
-`ro.face.sense_service.camera_id=1` selects that front index using Sense's
-existing override. No CameraService, Sense, or proprietary HAL source change
-is required. Revalidate this index if the retained vendor firmware changes.
+The mapping covers device names, availability and torch callbacks, concurrent
+queries, resource conflicts, physical characteristics, stream configurations,
+physical capture settings and results, and standard active physical-ID metadata.
+Input request queues and opaque vendor metadata are retained. Result callbacks
+consume the HAL FMQ and write translated packets to a separate framework FMQ
+of the same capacity. A full output queue uses standard inline metadata fallback.
+Binder parcel copying preserves file descriptor ownership. No shared packet is
+edited while a client can read it. Binder extensions and dumps are forwarded.
+
+The SystemUI device overlay uses public ID `1` for the existing screen-under
+camera protection; its position and shape are unchanged. CameraService, Sense,
+and proprietary HAL source require no changes. Sense uses ordinary front-camera
+discovery, without a camera-index property or an additional SELinux grant.
+Applications should select cameras by their advertised facing.
 
 The Super assembler merges the compiled library and source-matched init file
-into the retained OEM ODM image. It preserves existing ODM content and labels,
-and rejects missing, stale, redirected, or malformed inputs. Vendor and its
-NDK libraries remain the retained firmware inputs.
+into the retained OEM ODM image, preserving existing files and labels. Missing,
+stale, redirected, or malformed inputs are rejected. Revalidate the mapping
+and AIDL ABI when changing the retained vendor firmware.
 
-Build `nx809j-camera-metadata-test` and `nx809j-camera-provider-test` to check
-the adaptation. The provider test requires a running NX809J OEM provider and
-reads metadata; it does not register a service or open a capture session.
-Run it with the retained vendor libraries in `LD_LIBRARY_PATH` to verify the
-actual frozen ABI. Deployment acceptance also requires Camera1 enumeration,
-real Sense enrollment, front/rear preview, restart, and lock-screen tests.
+Build `nx809j-camera-metadata-test` and `nx809j-camera-provider-test`. The latter
+reads real NX809J provider metadata and exercises local callback/session
+delegators and actual FMQs; it never registers a service or opens a live camera.
+For execution, place only the retained camera AIDL dependency libraries in a
+dedicated test directory. The whole vendor library directory can shadow the
+test's platform Binder library when used in `LD_LIBRARY_PATH`.
+
+Deployment acceptance includes Camera1 indices and Camera2 facing, all four
+camera previews, physical stream/result IDs, stock camera front/rear use, Sense
+enrollment and lock-screen authentication, camera protection, and a normal
+restart. Full application workflows using offline or injection sessions require
+separate device validation in addition to focused adapter tests.
