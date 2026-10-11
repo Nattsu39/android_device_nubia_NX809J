@@ -7,10 +7,17 @@ and in Camera2 availability callbacks. Filtering the group and overriding the
 index alone fixes camera opening but leaves authentication waiting for a
 different Camera2 ID.
 
-The device tree builds an ODM library and an init override for the retained
-OEM camera provider. The scoped preload wraps only registration of the standard
-`vendor_qti/0` provider. The executable, service identity, scheduling, four AIDL
-registrations, proprietary extensions, and vendor inputs are retained.
+The device tree builds an ODM library, an OEM provider copy, and an init override.
+The provider enters its SELinux domain with `AT_SECURE=1`, so `LD_PRELOAD` is
+ignored. `patch_provider.py` deterministically adds the adapter as the first
+`DT_NEEDED` entry in the pinned OEM executable. Existing instructions, allocated
+data, dependency ordering, entry point, and RELRO protections are preserved;
+the string and dynamic tables use verified padding. No external ELF tool is
+required. The source firmware input has SHA256
+`8149f32f1e756b21a3698f127db22c4f2ba5fc43e779ba1bd6a520e5319718ac`.
+The adapter wraps only registration of the standard `vendor_qti/0` provider.
+The service identity, scheduling, four AIDL registrations, proprietary
+extensions, and retained vendor partition are unchanged.
 Provider, device, session, callback, offline, and injection adapters use the
 frozen AIDL V3 interfaces implemented by this firmware.
 
@@ -36,8 +43,11 @@ and proprietary HAL source require no changes. Sense uses ordinary front-camera
 discovery, without a camera-index property or an additional SELinux grant.
 Applications should select cameras by their advertised facing.
 
-The Super assembler merges the compiled library and source-matched init file
-into the retained OEM ODM image, preserving existing files and labels. Missing,
+The Super assembler merges the compiled library, verified provider copy, and
+source-matched init file into OEM ODM. The executable uses the existing
+`hal_camera_default_exec` label; its exact mapping is added to ODM file contexts.
+No additional domain or permission is required. Existing files and labels are
+preserved apart from that added context mapping. Missing,
 stale, redirected, or malformed inputs are rejected. Revalidate the mapping
 and AIDL ABI when changing the retained vendor firmware.
 

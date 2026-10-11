@@ -1,6 +1,31 @@
 // Copyright (C) 2026 The Avium Project
 // SPDX-License-Identifier: Apache-2.0
 
+python_binary_host {
+    name: "nx809j-patch-camera-provider",
+    main: "patch_provider.py",
+    srcs: ["patch_provider.py"],
+}
+
+genrule {
+    name: "nx809j-camera-provider-patched",
+    tools: ["nx809j-patch-camera-provider"],
+    srcs: ["provider/vendor.qti.camera.provider-service_64"],
+    out: ["nx809j-camera-provider"],
+    cmd: "$(location nx809j-patch-camera-provider) --input $(in) --output $(out)",
+}
+
+cc_prebuilt_binary {
+    name: "nx809j-camera-provider",
+    device_specific: true,
+    compile_multilib: "64",
+    srcs: [":nx809j-camera-provider-patched"],
+    relative_install_path: "hw",
+    strip: { none: true },
+    // The validated OEM executable retains its original vendor dependency set.
+    check_elf_files: false,
+}
+
 cc_library_shared {
     name: "libnx809j_camera_provider",
     device_specific: true,

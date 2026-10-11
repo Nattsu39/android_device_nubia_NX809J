@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import os
 from pathlib import Path
+import runpy
 import stat
 import struct
 import sys
@@ -18,6 +19,8 @@ CONFIGS = {
 }
 LABEL = "security.selinux"
 CAMERA_LIBRARY = "libnx809j_camera_provider.so"
+CAMERA_EXECUTABLE = "nx809j-camera-provider"
+CAMERA_EXECUTABLE_CONTEXT = b"u:object_r:hal_camera_default_exec:s0"
 
 
 def regular_file(path: Path) -> Path:
@@ -74,6 +77,37 @@ def merge_configs(device_tree: Path, compiled_odm: Path, odm_root: Path,
     if library_destination.exists() and not library_destination.is_file():
         raise ValueError(f"Non-file destination preserved: {library_destination}")
 
+    transformer = regular_file(device_tree / "camera/patch_provider.py")
+    original_provider = regular_file(
+        device_tree / "camera/provider/vendor.qti.camera.provider-service_64").read_bytes()
+    expected_provider = runpy.run_path(str(transformer))["patch_provider"](original_provider)
+    provider = regular_file(compiled_odm / "bin/hw" / CAMERA_EXECUTABLE).read_bytes()
+    if provider != expected_provider:
+        raise ValueError("Compiled ODM provider differs from the deterministic OEM transformation")
+    provider_context = regular_file(device_tree / "camera/provider_file_contexts").read_bytes()
+    if provider_context != b"/odm/bin/hw/nx809j-camera-provider " + CAMERA_EXECUTABLE_CONTEXT + b"\n":
+        raise ValueError("Unexpected camera provider context mapping")
+    contexts_file = regular_file(odm_root / "etc/selinux/odm_file_contexts")
+    contexts_metadata = contexts_file.stat()
+    contexts_label = os.getxattr(contexts_file, LABEL)
+    if contexts_label.rstrip(b"\0") != b"u:object_r:file_contexts_file:s0":
+        raise ValueError("Unexpected ODM file contexts label")
+    contexts = contexts_file.read_bytes()
+    if provider_context.rstrip(b"\n") not in contexts.splitlines():
+        if b"nx809j-camera-provider" in contexts:
+            raise ValueError("Conflicting camera provider context mapping")
+        contexts = contexts + (b"\n" if contexts and not contexts.endswith(b"\n") else b"")
+        contexts += provider_context
+    for path in (odm_root / "bin", odm_root / "bin/hw"):
+        if path.exists():
+            checked_directory(path)
+        elif verify_only:
+            raise ValueError(f"Missing ODM executable directory: {path}")
+    provider_destination = odm_root / "bin/hw" / CAMERA_EXECUTABLE
+    if provider_destination.is_symlink() or (provider_destination.exists()
+                                             and not provider_destination.is_file()):
+        raise ValueError("Redirected ODM provider executable")
+
     for name, contents in inputs.items():
         destination = init_dir / name
         if not verify_only and (not destination.exists() or destination.read_bytes() != contents):
@@ -108,6 +142,34 @@ def merge_configs(device_tree: Path, compiled_odm: Path, odm_root: Path,
             or os.getxattr(library_destination, LABEL) != library_context):
         raise ValueError("ODM camera library verification failed")
     print(f"Verified {hashlib.sha256(library).hexdigest()}  lib64/{CAMERA_LIBRARY}")
+    if not verify_only:
+        root_metadata = odm_root.stat()
+        for path in (odm_root / "bin", odm_root / "bin/hw"):
+            if not path.exists():
+                path.mkdir()
+                os.chmod(path, 0o755)
+                os.chown(path, 0, 2000)
+                os.setxattr(path, LABEL, library_context)
+                os.utime(path, ns=(reference_metadata.st_atime_ns, reference_metadata.st_mtime_ns))
+        if not provider_destination.exists() or provider_destination.read_bytes() != provider:
+            provider_destination.write_bytes(provider)
+            os.chmod(provider_destination, 0o755)
+            os.chown(provider_destination, 0, 2000)
+            os.setxattr(provider_destination, LABEL, CAMERA_EXECUTABLE_CONTEXT)
+            os.utime(provider_destination,
+                     ns=(reference_metadata.st_atime_ns, reference_metadata.st_mtime_ns))
+        if contexts_file.read_bytes() != contexts:
+            contexts_file.write_bytes(contexts)
+            os.utime(contexts_file, ns=(contexts_metadata.st_atime_ns, contexts_metadata.st_mtime_ns))
+        os.utime(odm_root, ns=(root_metadata.st_atime_ns, root_metadata.st_mtime_ns))
+    metadata = regular_file(provider_destination).stat()
+    if (provider_destination.read_bytes() != provider or stat.S_IMODE(metadata.st_mode) != 0o755
+            or metadata.st_uid != 0 or metadata.st_gid != 2000
+            or os.getxattr(provider_destination, LABEL).rstrip(b"\0") != CAMERA_EXECUTABLE_CONTEXT):
+        raise ValueError("ODM camera executable verification failed")
+    if contexts_file.read_bytes() != contexts or os.getxattr(contexts_file, LABEL) != contexts_label:
+        raise ValueError("ODM camera file context verification failed")
+    print(f"Verified {hashlib.sha256(provider).hexdigest()}  bin/hw/{CAMERA_EXECUTABLE}")
     if not verify_only:
         os.utime(init_dir, ns=(directory_metadata.st_atime_ns, directory_metadata.st_mtime_ns))
         os.utime(library_dir, ns=(library_directory_metadata.st_atime_ns,

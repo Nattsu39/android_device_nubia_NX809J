@@ -11,7 +11,7 @@
 
 #include "CameraProviderAdapter.h"
 
-// The preload is scoped to the OEM camera provider by its ODM init service.
+// The dependency is scoped to the OEM provider copy by its ODM init service.
 // Leave its ZTE transfer, AON and offline-camera registrations untouched.
 extern "C" __attribute__((visibility("default"))) binder_exception_t
 AServiceManager_addService(AIBinder* binder, const char* instance) {
