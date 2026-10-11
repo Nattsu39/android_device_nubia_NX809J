@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Keep the OEM ODM payload and add the control actions built from this device tree.
+# Keep OEM ODM and add the control actions and camera adapter built by this device tree.
 set -euo pipefail
 
 if [ "$#" -ne 3 ]; then
@@ -65,4 +65,4 @@ umount "$mount_dir"
 mounted=0
 
 mv -f -- "$pending" "$output"
-echo "Prepared OEM ODM with source-built control configurations: $output"
+echo "Prepared OEM ODM with source-built control configurations and camera adapter: $output"

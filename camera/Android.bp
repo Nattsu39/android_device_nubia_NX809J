@@ -1,0 +1,46 @@
+// Copyright (C) 2026 The Avium Project
+// SPDX-License-Identifier: Apache-2.0
+
+cc_library_shared {
+    name: "libnx809j_camera_provider",
+    device_specific: true,
+    compile_multilib: "64",
+    srcs: ["CameraProviderAdapter.cpp", "CameraProviderRegistration.cpp", "PhysicalCameraMetadata.cpp"],
+    shared_libs: [
+        "android.hardware.camera.provider-V3-ndk",
+        "android.hardware.camera.device-V3-ndk",
+        "libbinder_ndk",
+        "libcamera_metadata",
+        "libdl",
+        "liblog",
+    ],
+    cflags: ["-Wall", "-Wextra", "-Werror", "-fvisibility=hidden"],
+    cpp_std: "c++17",
+}
+
+cc_test {
+    name: "nx809j-camera-metadata-test",
+    srcs: ["PhysicalCameraMetadata.cpp", "tests/PhysicalCameraMetadataTest.cpp"],
+    local_include_dirs: ["."],
+    shared_libs: ["libcamera_metadata"],
+    compile_multilib: "64",
+    cflags: ["-Wall", "-Wextra", "-Werror"],
+    cpp_std: "c++17",
+}
+
+cc_test {
+    name: "nx809j-camera-provider-test",
+    device_specific: true,
+    compile_multilib: "64",
+    srcs: ["CameraProviderAdapter.cpp", "PhysicalCameraMetadata.cpp", "tests/CameraProviderAdapterTest.cpp"],
+    local_include_dirs: ["."],
+    shared_libs: [
+        "android.hardware.camera.provider-V3-ndk",
+        "android.hardware.camera.device-V3-ndk",
+        "libbinder_ndk",
+        "libcamera_metadata",
+        "liblog",
+    ],
+    cflags: ["-Wall", "-Wextra", "-Werror"],
+    cpp_std: "c++17",
+}

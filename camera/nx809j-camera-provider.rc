@@ -1,0 +1,18 @@
+# Copyright (C) 2026 The Avium Project
+# SPDX-License-Identifier: Apache-2.0
+
+# ODM init is parsed after vendor. Retain the OEM executable, interfaces,
+# identity and scheduling; add the device-specific metadata adapter only here.
+service vendor.camera-provider /vendor/bin/hw/vendor.qti.camera.provider-service_64
+    override
+    interface aidl android.hardware.camera.provider.ICameraProvider/vendor_qti/0
+    interface aidl vendor.zte.hardware.camera.transfer.ITransfer/vendor_zte/0
+    interface aidl vendor.qti.hardware.camera.offlinecamera.IOfflineCameraService/default
+    interface aidl vendor.qti.hardware.camera.aon.IAONService/default
+    class hal
+    user cameraserver
+    group audio camera input drmrpc oem_2907 oem_2912 wakelock
+    ioprio rt 4
+    capabilities SYS_NICE BLOCK_SUSPEND
+    task_profiles CameraServiceCapacity HighPerformance ProcessCapacityHigh
+    setenv LD_PRELOAD /odm/lib64/libnx809j_camera_provider.so

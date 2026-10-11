@@ -1,0 +1,7 @@
+# Copyright (C) 2026 The Avium Project
+# SPDX-License-Identifier: Apache-2.0
+
+system_internal_prop(nx809j_face_camera_prop)
+
+# ParanoidSense runs with the platform-signed android.uid.system identity.
+get_prop(system_app, nx809j_face_camera_prop)

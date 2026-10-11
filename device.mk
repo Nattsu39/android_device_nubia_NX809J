@@ -20,6 +20,9 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/display/display_id_4630947168392018835.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/displayconfig/display_id_4630947168392018835.xml
 # END NX809J DC HDR CONFIG
 
+# OEM camera metadata compatibility and the existing Sense camera-index override.
+include $(LOCAL_PATH)/camera/camera.mk
+
 # A/B
 $(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/launch_with_vendor_ramdisk.mk)
 

@@ -34,7 +34,8 @@ for f in "$SYS" "$SEXT" "$PROD" "$VEN" "$ODM" "$VDLKM" "$SDLKM"; do
 done
 
 # system_ext contains the new control app and services. Their vendor_init
-# actions must accompany them even when the rest of ODM is retained from OEM.
+# actions and camera metadata adapter must accompany them even when the rest
+# of ODM is retained from OEM.
 CONTROL_ODM="$OUTDIR/odm-control.img"
 BIN="$BIN" bash "$(dirname "${BASH_SOURCE[0]}")/prepare_control_odm.sh" \
   "$ODM" "${CONTROL_ODM_BUILD_DIR:-$OUT/odm}" "$CONTROL_ODM"

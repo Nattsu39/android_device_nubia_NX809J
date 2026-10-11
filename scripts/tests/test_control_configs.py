@@ -5,6 +5,7 @@ import importlib.util
 import os
 from pathlib import Path
 import tempfile
+import struct
 import unittest
 from unittest.mock import patch
 
@@ -14,6 +15,7 @@ SPEC = importlib.util.spec_from_file_location("control_configs", SCRIPT)
 CONTROL = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CONTROL)
 CONTEXT = b"u:object_r:vendor_configs_file:s0\0"
+LIBRARY_CONTEXT = b"u:object_r:vendor_file:s0\0"
 
 
 class ControlConfigTests(unittest.TestCase):
@@ -36,9 +38,18 @@ class ControlConfigTests(unittest.TestCase):
         self.oem = self.odm / "lib64/camera.bin"
         self.oem.parent.mkdir()
         self.oem.write_bytes(b"retained OEM camera payload")
+        self.library = self.compiled / "lib64" / CONTROL.CAMERA_LIBRARY
+        self.library.parent.mkdir()
+        library = bytearray(64)
+        library[:6] = b"\x7fELF\x02\x01"
+        struct.pack_into("<HH", library, 16, 3, 183)
+        library.extend(b"AServiceManager_addService\0NX809JCameraCompat\0")
+        self.library.write_bytes(library)
         # Host fixture boundaries cannot set Android security.selinux labels.
         # Production integration additionally verifies real mounted EROFS xattrs.
-        self.get_label = patch.object(os, "getxattr", return_value=CONTEXT, create=True)
+        self.get_label = patch.object(os, "getxattr", side_effect=lambda path, name:
+                                      LIBRARY_CONTEXT if "lib64" in Path(path).parts else CONTEXT,
+                                      create=True)
         self.set_label = patch.object(os, "setxattr", create=True)
         self.chown = patch.object(os, "chown", create=True)
         for mocked in (self.get_label, self.set_label, self.chown):
@@ -60,6 +71,8 @@ class ControlConfigTests(unittest.TestCase):
         self.merge(verify_only=True)
         self.merge()
         self.assertEqual(before, (self.reference.read_bytes(), self.oem.read_bytes()))
+        self.assertEqual((self.odm / "lib64" / CONTROL.CAMERA_LIBRARY).read_bytes(),
+                         self.library.read_bytes())
         for name in CONTROL.CONFIGS:
             path = self.odm / "etc/init" / name
             self.assertEqual(path.read_bytes(), (self.compiled / "etc/init" / name).read_bytes())
@@ -88,6 +101,31 @@ class ControlConfigTests(unittest.TestCase):
         self.merge()
         (self.odm / "etc/init/fp_uewake_arm.rc").write_bytes(b"truncated")
         with self.assertRaisesRegex(ValueError, "verification failed"):
+            self.merge(verify_only=True)
+
+    def test_missing_camera_library_stops_before_any_merge(self):
+        self.library.unlink()
+        with self.assertRaisesRegex(ValueError, "Missing or redirected"):
+            self.merge()
+        self.assertFalse((self.odm / "etc/init/redmagic_hw_arm.rc").exists())
+
+    def test_invalid_camera_library_stops_before_any_merge(self):
+        self.library.write_bytes(b"not an AArch64 library")
+        with self.assertRaisesRegex(ValueError, "Invalid compiled camera adapter"):
+            self.merge()
+        self.assertFalse((self.odm / "etc/init/redmagic_hw_arm.rc").exists())
+
+    def test_redirected_camera_library_is_preserved(self):
+        destination = self.odm / "lib64" / CONTROL.CAMERA_LIBRARY
+        destination.symlink_to(self.oem)
+        with self.assertRaisesRegex(ValueError, "Redirected destination"):
+            self.merge()
+        self.assertEqual(self.oem.read_bytes(), b"retained OEM camera payload")
+
+    def test_corrupted_camera_library_is_rejected(self):
+        self.merge()
+        (self.odm / "lib64" / CONTROL.CAMERA_LIBRARY).write_bytes(b"truncated")
+        with self.assertRaisesRegex(ValueError, "camera library verification failed"):
             self.merge(verify_only=True)
 
 

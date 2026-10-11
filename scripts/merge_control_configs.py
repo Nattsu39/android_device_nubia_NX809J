@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Merge source-built hardware control actions into the retained OEM ODM tree."""
+"""Merge source-built control and camera compatibility assets into OEM ODM."""
 
 import argparse
 import hashlib
 import os
 from pathlib import Path
 import stat
+import struct
 import sys
 
 
@@ -13,8 +14,10 @@ CONFIGS = {
     "redmagic_hw_arm.rc": "hwlevels/redmagic_hw_arm.rc",
     "fp_uewake_arm.rc": "fp_uewake/fp_uewake_arm.rc",
     "dt2w_uewake_arm.rc": "dt2w/dt2w_uewake_arm.rc",
+    "nx809j-camera-provider.rc": "camera/nx809j-camera-provider.rc",
 }
 LABEL = "security.selinux"
+CAMERA_LIBRARY = "libnx809j_camera_provider.so"
 
 
 def regular_file(path: Path) -> Path:
@@ -54,6 +57,23 @@ def merge_configs(device_tree: Path, compiled_odm: Path, odm_root: Path,
             raise ValueError(f"Non-file destination preserved: {destination}")
         inputs[name] = compiled
 
+    library_dir = checked_directory(odm_root / "lib64")
+    library_directory_metadata = library_dir.stat()
+    library_context = os.getxattr(library_dir, LABEL)
+    if library_context.rstrip(b"\0") != b"u:object_r:vendor_file:s0":
+        raise ValueError(f"Unexpected ODM library label: {library_context!r}")
+    library = regular_file(compiled_odm / "lib64" / CAMERA_LIBRARY).read_bytes()
+    if (len(library) < 64 or library[:6] != b"\x7fELF\x02\x01"
+            or struct.unpack_from("<HH", library, 16) != (3, 183)
+            or b"AServiceManager_addService\0" not in library
+            or b"NX809JCameraCompat\0" not in library):
+        raise ValueError("Invalid compiled camera adapter: expected the AArch64 shared library")
+    library_destination = library_dir / CAMERA_LIBRARY
+    if library_destination.is_symlink():
+        raise ValueError(f"Redirected destination preserved: {library_destination}")
+    if library_destination.exists() and not library_destination.is_file():
+        raise ValueError(f"Non-file destination preserved: {library_destination}")
+
     for name, contents in inputs.items():
         destination = init_dir / name
         if not verify_only and (not destination.exists() or destination.read_bytes() != contents):
@@ -71,8 +91,27 @@ def merge_configs(device_tree: Path, compiled_odm: Path, odm_root: Path,
                 or os.getxattr(destination, LABEL) != context):
             raise ValueError(f"ODM control configuration verification failed: {name}")
         print(f"Verified {hashlib.sha256(contents).hexdigest()}  etc/init/{name}")
+
+    if not verify_only and (not library_destination.exists()
+                            or library_destination.read_bytes() != library):
+        library_destination.write_bytes(library)
+        os.chmod(library_destination, 0o644)
+        os.chown(library_destination, 0, 0)
+        os.setxattr(library_destination, LABEL, library_context)
+        os.utime(library_destination, ns=(library_directory_metadata.st_atime_ns,
+                                         library_directory_metadata.st_mtime_ns))
+    regular_file(library_destination)
+    metadata = library_destination.stat()
+    if (library_destination.read_bytes() != library
+            or stat.S_IMODE(metadata.st_mode) != 0o644
+            or metadata.st_uid != 0 or metadata.st_gid != 0
+            or os.getxattr(library_destination, LABEL) != library_context):
+        raise ValueError("ODM camera library verification failed")
+    print(f"Verified {hashlib.sha256(library).hexdigest()}  lib64/{CAMERA_LIBRARY}")
     if not verify_only:
         os.utime(init_dir, ns=(directory_metadata.st_atime_ns, directory_metadata.st_mtime_ns))
+        os.utime(library_dir, ns=(library_directory_metadata.st_atime_ns,
+                                 library_directory_metadata.st_mtime_ns))
 
 
 def main() -> int:
