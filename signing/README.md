@@ -70,6 +70,12 @@ user/release properties and both vbmeta signatures, then records image hashes
 in `release-signing-report.json`. This phase requires root and the host EROFS
 tools. New verification keys or image contents require another check.
 
+The root verifier checks its release public key, signature, system chain and
+all five boot hash descriptors explicitly. The generic AVB CLI would also read
+the four retained OEM partitions from the source product output, even when
+flags are 3. Those partitions are supplied separately at Super assembly and
+verified against the fixed input hashes; their old hashtrees are not enforced.
+
 The hybrid boot policy remains `vbmeta flags=3`. Custom signatures do not restore
 an enforced OEM verified-boot trust chain and do not authorize relocking the
 bootloader. Vendor/ODM/DLKM input ownership is unchanged. A clean user-data
@@ -79,6 +85,7 @@ Validation commands:
 
 ```sh
 python3 device/nubia/NX809J/scripts/tests/test_release_keys.py
+python3 device/nubia/NX809J/scripts/tests/test_release_avb.py
 python3 device/nubia/NX809J/scripts/verify_release_graph.py --source-tree "$PWD"
 ```
 

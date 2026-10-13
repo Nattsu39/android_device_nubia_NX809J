@@ -4,6 +4,7 @@
 import argparse
 from contextlib import contextmanager, ExitStack
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -187,16 +188,79 @@ class Verifier:
                               'payload_key': entry['payload_key'], 'preserved': False})
 
 
+def verify_boot_hash(product: Path, descriptor) -> None:
+    path = product / f'{descriptor.partition_name}.img'
+    digest = hashlib.new(descriptor.hash_algorithm)
+    digest.update(descriptor.salt)
+    remaining = descriptor.image_size
+    with path.open('rb') as stream:
+        if stream.read(4) == b'\x3a\xff\x26\xed':
+            raise ValueError(f'Boot images must be raw: {path.name}')
+        stream.seek(0)
+        while remaining:
+            chunk = stream.read(min(remaining, 1024 * 1024))
+            if not chunk:
+                raise ValueError(f'Truncated boot image: {path.name}')
+            digest.update(chunk)
+            remaining -= len(chunk)
+    if not descriptor.digest or digest.digest() != descriptor.digest:
+        raise ValueError(f'Boot hash verification failed: {descriptor.partition_name}')
+
+
+def verify_root_avb(tree: Path, product: Path, keys: Path) -> None:
+    # The generic CLI verifies every retained OEM hashtree even with flags=3.
+    # Use the pinned AVB implementation to verify the root signature and the
+    # boot/system chain explicitly. Super assembly checks retained input hashes.
+    specification = importlib.util.spec_from_file_location(
+        'nx809j_build_avbtool', tree / 'external/avb/avbtool.py')
+    if specification is None or specification.loader is None:
+        raise ValueError('Cannot load the pinned AVB implementation')
+    avb = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(avb)
+
+    blob = (product / 'vbmeta.img').read_bytes()
+    header = avb.AvbVBMetaHeader(blob[:avb.AvbVBMetaHeader.SIZE])
+    algorithm, _ = avb.lookup_algorithm_by_type(header.algorithm_type)
+    if algorithm != 'SHA256_RSA4096':
+        raise ValueError('Root AVB must use SHA256_RSA4096')
+    if header.flags != 3:
+        raise ValueError('The reviewed hybrid boot policy requires vbmeta flags=3')
+    if not avb.verify_vbmeta_signature(header, blob):
+        raise ValueError('Root AVB signature verification failed')
+    auxiliary = header.SIZE + header.authentication_data_block_size
+    key_start = auxiliary + header.public_key_offset
+    if blob[key_start:key_start + header.public_key_size] != (keys / 'avb.avbpubkey').read_bytes():
+        raise ValueError('Root AVB does not use the private release key')
+    start = auxiliary + header.descriptors_offset
+    descriptors = avb.parse_descriptors(blob[start:start + header.descriptors_size])
+
+    chains = [item for item in descriptors if isinstance(item, avb.AvbChainPartitionDescriptor)]
+    if len(chains) != 1:
+        raise ValueError('Expected exactly one system AVB chain')
+    chain = chains[0]
+    if (chain.partition_name != 'vbmeta_system' or chain.rollback_index_location != 2
+            or chain.flags != 0 or chain.public_key != (keys / 'vbmeta_system.avbpubkey').read_bytes()):
+        raise ValueError('System AVB chain identity or rollback location differs')
+
+    boot = [item for item in descriptors if isinstance(item, avb.AvbHashDescriptor)]
+    expected_boot = {'boot', 'dtbo', 'init_boot', 'recovery', 'vendor_boot'}
+    if len(boot) != len(expected_boot) or {item.partition_name for item in boot} != expected_boot:
+        raise ValueError('Root AVB boot descriptor set differs')
+    for descriptor in boot:
+        verify_boot_hash(product, descriptor)
+
+    retained = [item for item in descriptors if isinstance(item, avb.AvbHashtreeDescriptor)]
+    expected_retained = {'odm', 'system_dlkm', 'vendor', 'vendor_dlkm'}
+    if (len(retained) != len(expected_retained)
+            or {item.partition_name for item in retained} != expected_retained):
+        raise ValueError('Unreviewed retained AVB hashtree descriptor set')
+
+
 def verify_avb(tree: Path, product: Path, keys: Path) -> None:
     tool = str(tree / 'external/avb/avbtool.py')
     command(tool, 'verify_image', '--image', str(product / 'vbmeta_system.img'),
             '--key', str(keys / 'vbmeta_system.pem'))
-    command(tool, 'verify_image', '--image', str(product / 'vbmeta.img'),
-            '--key', str(keys / 'avb.pem'), '--expected_chain_partition',
-            f'vbmeta_system:2:{keys / "vbmeta_system.avbpubkey"}')
-    information = command(tool, 'info_image', '--image', str(product / 'vbmeta.img')).decode()
-    if re.search(r'^\s*Flags:\s+3\s*$', information, re.MULTILINE) is None:
-        raise ValueError('The reviewed hybrid boot policy requires vbmeta flags=3')
+    verify_root_avb(tree, product, keys)
 
 
 def main() -> None:
