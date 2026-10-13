@@ -1,39 +1,14 @@
 name: Build NX809J
 
-# Self-hosted CI for the NX809J source build, using the portable source lock.
-# Runs on a self-hosted runner on the build machine (where the ~268 GB tree lives) —
-# GitHub-hosted runners can't build LOS (disk/time). Operates on the EXISTING tree at
-# $LINEAGE; it does NOT git-checkout this repo (no actions/checkout on purpose).
-#
-# HONEST SCOPE (see .github/README-CI.md "Audit — reproducible vs manual"):
-#   FROM SOURCE (this workflow, reproducible): system, system_ext, product, boot chain
-#     (boot built from the prebuilt WildKernels kernel), target-files, OTA.
-#   NOT FROM SOURCE (static hand-built inputs baked into the super):
-#     - vendor: stock B13MR vendor + enforcing CIL + ultrawide .so patch  (uw_super/vendor_uw.img)
-#     - odm: curated                                                      (uw_super/odm_uw.img)
-#     - vendor_dlkm + system_dlkm: stock                                  (ci_inputs/*.img)
-#     - kernel: WildKernels OP-WILD KSU+SUSFS (Coding-BR Actions, OP15), camera-patched,
-#       committed as a prebuilt in the kernel repo — synced, not rebuilt here.
-
+# The trusted self-hosted runner provisions release keys locally. The workflow
+# never downloads private keys or includes them in artifacts.
 on:
   workflow_dispatch:
     inputs:
       reposync:
-        description: "repo sync manifest + local_manifests before building (slow)"
+        description: Sync the pinned source manifest before building
         type: boolean
         default: false
-      dist:
-        description: "build target-files/OTA via 'm dist' (required for release-keys signing)"
-        type: boolean
-        default: true
-      release_keys:
-        description: "re-sign with release keys from vendor/lineage-priv/keys (needs 'dist')"
-        type: boolean
-        default: false
-      target:
-        description: "override m target (empty = full build; e.g. 'systemimage productimage')"
-        type: string
-        default: ""
 
 concurrency:
   group: nx809j-build
@@ -43,114 +18,83 @@ jobs:
   build:
     runs-on: [self-hosted, nx809j]
     timeout-minutes: 900
+    permissions:
+      contents: write
     env:
-      LINEAGE:    ${{ vars.LINEAGE_TREE  || '/var/home/beast/android/lineage' }}
+      AVIUM_TREE: ${{ vars.LINEAGE_TREE || '/root/avium' }}
       PORT_SCRIPT: ${{ vars.NX809J_PORT_SCRIPT || '/root/port_nx809j_avium.sh' }}
       RELEASE_DIR: ${{ vars.NX809J_RELEASE_DIR || '/root/nx809-fw-0823' }}
+      OUTDIR: ${{ vars.NX809J_OUTDIR || '/root/nx809j-avium-out' }}
+      SCRATCH: ${{ vars.NX809J_SCRATCH || '/root/nx809-super-scratch' }}
+      LUNCH: lineage_NX809J-bp4a-user
       JOBS: 6
       SKIP_MINSDK: 1
-      SUPER_SCRIPT: ${{ vars.SUPER_SCRIPT || format('{0}/device/nubia/NX809J/scripts/build_super_ci.sh', vars.LINEAGE_TREE || '/var/home/beast/android/lineage') }}
-      KEYS_DIR:   ${{ vars.KEYS_DIR || 'vendor/lineage-priv/keys' }}
-      LUNCH:      ${{ vars.LUNCH || 'lineage_NX809J-bp4a-userdebug' }}
-      DEVICE:     NX809J
       LC_ALL: C
 
     steps:
-      - name: Environment
+      - name: Check environment
         run: |
-          echo "tree=$LINEAGE  lunch=$LUNCH"
           test -f "$PORT_SCRIPT"
-          df -h "$LINEAGE" | tail -1; free -g | sed -n '1,2p'; nproc
+          df -h "$AVIUM_TREE"
+          free -h
+          swapon --show
 
-      - name: repo sync (optional)
+      - name: Sync pinned sources
         if: ${{ inputs.reposync }}
-        run: |
-          AVIUM_TREE="$LINEAGE" bash "$PORT_SCRIPT" sync
+        run: bash "$PORT_SCRIPT" sync
 
-      - name: Build partitions
+      - name: Verify separately provisioned release keys
         run: |
-          cd "$LINEAGE"
-          set -o pipefail
-          AVIUM_TREE="$LINEAGE" bash "$PORT_SCRIPT" build
-          source build/envsetup.sh
-          unset -f grep egrep fgrep ugrep 2>/dev/null || true   # ugrep wrapper breaks soong dumpvars
-          lunch "$LUNCH"                                         # never pipe (subshell drops TARGET_RELEASE)
-          MT="${{ inputs.target }}"
-          if [ -z "$MT" ] && [ "${{ inputs.dist }}" = "true" ]; then MT="dist"; fi
-          # sandbox-off + nice + -j6 (higher -j OOMs the box)
-          if [ -n "$MT" ]; then
-            nice -n 19 ionice -c3 env NINJA_HIGHMEM_NUM_JOBS=2 \
-              m -j6 $MT 2>&1 | tail -n 400
+          python3 "$AVIUM_TREE/device/nubia/NX809J/scripts/release_keys.py" \
+            verify --source-tree "$AVIUM_TREE"
+
+      - name: Build and verify user partitions
+        run: bash "$PORT_SCRIPT" build
+
+      - name: Verify image signatures and assemble Super
+        run: |
+          if [ "$(id -u)" = 0 ]; then
+            bash "$PORT_SCRIPT" super
+          else
+            sudo -n env AVIUM_TREE="$AVIUM_TREE" RELEASE_DIR="$RELEASE_DIR" \
+              OUTDIR="$OUTDIR" SCRATCH="$SCRATCH" LUNCH="$LUNCH" JOBS="$JOBS" \
+              bash "$PORT_SCRIPT" super
           fi
-          echo "OUT=$LINEAGE/out/target/product/$DEVICE" >> "$GITHUB_ENV"
-          echo "DIST=$LINEAGE/out/dist" >> "$GITHUB_ENV"
-          echo "HOSTBIN=$LINEAGE/out/host/linux-x86/bin" >> "$GITHUB_ENV"
 
-      - name: Sign with release keys (optional)
-        id: sign
-        if: ${{ inputs.release_keys }}
+      - name: Package verified artifacts
+        id: package
         run: |
-          cd "$LINEAGE"
-          TF=$(ls -t "$DIST"/*-target_files-*.zip 2>/dev/null | head -1)
-          [ -n "$TF" ] || { echo "::error::release_keys set but no target-files zip (enable 'dist')"; exit 1; }
-          [ -d "$KEYS_DIR" ] || { echo "::error::$KEYS_DIR not present"; exit 1; }
-          export PATH="$HOSTBIN:$PATH"
-          SIGNED="$RUNNER_TEMP/signed-target_files.zip"
-          # re-sign APKs/APEX with release keys (AVB is bypassed by the patched ABL, so vbmeta keys are moot here)
-          sign_target_files_apks -o -d "$KEYS_DIR" "$TF" "$SIGNED"
-          img_from_target_files "$SIGNED" "$RUNNER_TEMP/signed-img.zip"
-          SDIR="$RUNNER_TEMP/signed"; rm -rf "$SDIR"; mkdir -p "$SDIR"
-          ( cd "$SDIR" && unzip -o "$RUNNER_TEMP/signed-img.zip" system.img system_ext.img product.img )
-          # hand these signed source partitions to the super assembler
-          echo "SYS=$SDIR/system.img"        >> "$GITHUB_ENV"
-          echo "SEXT=$SDIR/system_ext.img"   >> "$GITHUB_ENV"
-          echo "PROD=$SDIR/product.img"      >> "$GITHUB_ENV"
-          # also keep a signed OTA for the release
-          ota_from_target_files -k "$KEYS_DIR/releasekey" "$SIGNED" "$RUNNER_TEMP/$DEVICE-ota-signed.zip" || true
-
-      - name: Assemble super (source system/system_ext/product + stock vendor/odm/dlkm)
-        run: |
-          cd "$LINEAGE"
-          OUTIMG="$RUNNER_TEMP/super.img" OUT="$OUT" bash "$SUPER_SCRIPT"
-          echo "SUPER_IMG=$RUNNER_TEMP/super.img" >> "$GITHUB_ENV"
-
-      - name: Collect boot chain + package artifacts
-        id: pkg
-        run: |
-          # Boot chain: built from the prebuilt WildKernels kernel (synced via the kernel repo).
-          # Override BOOTCHAIN_DIR (repo var) if you stage magisk-patched init_boot elsewhere.
-          BC="${{ vars.BOOTCHAIN_DIR || '' }}"; [ -z "$BC" ] && BC="$OUT"
-          DST="$RUNNER_TEMP/nx809j-out"; rm -rf "$DST"; mkdir -p "$DST"
-          for i in boot init_boot vendor_boot dtbo vbmeta vbmeta_system recovery; do
-            [ -f "$BC/$i.img" ] && cp "$BC/$i.img" "$DST/"
+          destination=$(mktemp -d "$RUNNER_TEMP/nx809j-release.XXXXXX")
+          for partition in boot init_boot vendor_boot dtbo vbmeta vbmeta_system recovery; do
+            cp "$OUTDIR/$partition.img" "$destination/"
           done
-          cp "$SUPER_IMG" "$DST/super.img"
-          [ -f "$RUNNER_TEMP/$DEVICE-ota-signed.zip" ] && cp "$RUNNER_TEMP/$DEVICE-ota-signed.zip" "$DST/"
-          # MD5SUMS (matches the shipped release format)
-          ( cd "$DST" && md5sum super.img *.img 2>/dev/null > MD5SUMS.txt )
-          # Changelog from the device-tree git log since the last tag
-          TAG="nx809j-$(date +%Y%m%d-%H%M)"
-          {
-            echo "# NX809J LineageOS 23.2 — build $TAG"
-            echo; echo "Lunch: $LUNCH  |  release-keys: ${{ inputs.release_keys }}"
-            echo "Super: source system/system_ext/product + stock B13MR vendor(enf+ultrawide) + curated odm + stock dlkm."
-            echo "Boot: prebuilt WildKernels KSU+SUSFS kernel (camera-patched), synced not rebuilt."
-            echo; echo "## device tree changes"
-            git -C "$LINEAGE/device/nubia/$DEVICE" log --oneline -20 2>/dev/null | sed 's/^/- /'
-          } > "$DST/CHANGELOG.md"
-          # super is big (raw ~19 GB) -> zstd + split under GitHub's 2 GB/file release cap
-          zstd -15 -T0 -f -o "$DST/super.img.zst" "$DST/super.img" && rm -f "$DST/super.img"
-          split -b 1900M -d -a 2 "$DST/super.img.zst" "$DST/super.img.zst.part" && rm -f "$DST/super.img.zst"
-          ( cd "$DST" && sha256sum * > SHA256SUMS )
-          ls -lh "$DST"
-          echo "dir=$DST"  >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG"  >> "$GITHUB_OUTPUT"
+          cp "$OUTDIR/MD5SUMS.txt" "$destination/"
+          cp "$OUTDIR/SHA256SUMS.txt" "$destination/"
+          cp "$OUTDIR/release-signing-report.json" "$destination/"
+          cp "$AVIUM_TREE/device/nubia/NX809J-kernel/prebuilt/kernel-provenance.json" "$destination/"
+          zstd -15 -T0 -o "$destination/super.img.zst" "$OUTDIR/super.img"
+          split -b 1900M -d -a 2 "$destination/super.img.zst" "$destination/super.img.zst.part"
+          rm -- "$destination/super.img.zst"
+          (cd "$destination" && sha256sum *.part* > SHA256SUMS.parts.txt)
+          echo "directory=$destination" >> "$GITHUB_OUTPUT"
+          echo "tag=nx809j-$(date +%Y%m%d-%H%M)" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_DIRECTORY: ${{ steps.package.outputs.directory }}
+          RELEASE_TAG: ${{ steps.package.outputs.tag }}
         run: |
-          gh release create "${{ steps.pkg.outputs.tag }}" "${{ steps.pkg.outputs.dir }}"/* \
-            --repo "${{ github.repository }}" \
-            --title "NX809J ${{ steps.pkg.outputs.tag }}" \
-            --notes $'Automated NX809J source build.\n\nReassemble super: `cat super.img.zst.part* | zstd -d -o super.img`\nVerify: `md5sum -c MD5SUMS.txt` (after reassembling super).\nDeployment requires the verified SuperFastboot mode and project partition checks.\n\nSuper combines source system partitions with fixed vendor inputs. See README-CI.md.'
+          notes_file="$RUNNER_TEMP/nx809j-release-notes.txt"
+          cat > "$notes_file" <<'EOF'
+          NX809J AviumUI user build with private APK/APEX/AVB release signatures.
+          Kernel: pinned personal 6.12.38/ReSukiSU. Fixed vendor/ODM/DLKM inputs are retained.
+          Hybrid vbmeta flags remain 3; this does not establish an OEM locked-boot trust chain.
+
+          Reassemble Super: cat super.img.zst.part* | zstd -d -o super.img
+          Verify parts with SHA256SUMS.parts.txt, then images with SHA256SUMS.txt.
+          A clean user-data installation and the verified SuperFastboot mode are required.
+          See signing/README.md for scope and preserved pre-signed components.
+          EOF
+          gh release create "$RELEASE_TAG" "$ARTIFACT_DIRECTORY"/* \
+            --repo "$GITHUB_REPOSITORY" --title "NX809J $RELEASE_TAG" --notes-file "$notes_file"

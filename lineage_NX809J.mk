@@ -17,6 +17,9 @@ $(call inherit-product, device/nubia/NX809J/device.mk)
 # Inherit common LineageOS configuration
 $(call inherit-product, vendor/lineage/config/common_full_phone.mk)
 
+# Release builds use separately provisioned personal keys.
+$(call inherit-product, device/nubia/NX809J/signing/release.mk)
+
 # Device identifiers
 PRODUCT_NAME := lineage_NX809J
 PRODUCT_DEVICE := NX809J

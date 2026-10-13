@@ -1,0 +1,284 @@
+// Provision this file beside the private keys; generated from signing/manifest.json.
+// It contains module declarations only, never key material.
+
+android_app_certificate {
+    name: "nx809j_com.android.adbd",
+    certificate: "com.android.adbd",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.adservices",
+    certificate: "com.android.adservices",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.appsearch",
+    certificate: "com.android.appsearch",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.art",
+    certificate: "com.android.art",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.bt",
+    certificate: "com.android.bt",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.cellbroadcast",
+    certificate: "com.android.cellbroadcast",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.configinfrastructure",
+    certificate: "com.android.configinfrastructure",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.conscrypt",
+    certificate: "com.android.conscrypt",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.crashrecovery",
+    certificate: "com.android.crashrecovery",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.devicelock",
+    certificate: "com.android.devicelock",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.extservices",
+    certificate: "com.android.extservices",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.hardware.cas",
+    certificate: "com.android.hardware.cas",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.healthfitness",
+    certificate: "com.android.healthfitness",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.i18n",
+    certificate: "com.android.i18n",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.ipsec",
+    certificate: "com.android.ipsec",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.media",
+    certificate: "com.android.media",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.media.swcodec",
+    certificate: "com.android.media.swcodec",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.mediaprovider",
+    certificate: "com.android.mediaprovider",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.neuralnetworks",
+    certificate: "com.android.neuralnetworks",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.nfcservices",
+    certificate: "com.android.nfcservices",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.ondevicepersonalization",
+    certificate: "com.android.ondevicepersonalization",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.os.statsd",
+    certificate: "com.android.os.statsd",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.permission",
+    certificate: "com.android.permission",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.profiling",
+    certificate: "com.android.profiling",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.resolv",
+    certificate: "com.android.resolv",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.rkpd",
+    certificate: "com.android.rkpd",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.runtime",
+    certificate: "com.android.runtime",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.scheduling",
+    certificate: "com.android.scheduling",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.sdkext",
+    certificate: "com.android.sdkext",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.telephonycore",
+    certificate: "com.android.telephonycore",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.tethering",
+    certificate: "com.android.tethering",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.tzdata",
+    certificate: "com.android.tzdata",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.uprobestats",
+    certificate: "com.android.uprobestats",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.uwb",
+    certificate: "com.android.uwb",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.virt",
+    certificate: "com.android.virt",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.wifi",
+    certificate: "com.android.wifi",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.adservices.api",
+    certificate: "com.android.adservices.api",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.appsearch.apk",
+    certificate: "com.android.appsearch.apk",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.health.connect.backuprestore",
+    certificate: "com.android.health.connect.backuprestore",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.healthconnect.controller",
+    certificate: "com.android.healthconnect.controller",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.federatedcompute",
+    certificate: "com.android.federatedcompute",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.safetycenter.resources",
+    certificate: "com.android.safetycenter.resources",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.connectivity.resources",
+    certificate: "com.android.connectivity.resources",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.uwb.resources",
+    certificate: "com.android.uwb.resources",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.hotspot2.osulogin",
+    certificate: "com.android.hotspot2.osulogin",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.wifi.dialog",
+    certificate: "com.android.wifi.dialog",
+    visibility: ["//visibility:public"],
+}
+
+android_app_certificate {
+    name: "nx809j_com.android.wifi.resources",
+    certificate: "com.android.wifi.resources",
+    visibility: ["//visibility:public"],
+}

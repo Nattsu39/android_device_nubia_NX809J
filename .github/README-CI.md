@@ -1,30 +1,26 @@
-# NX809J source build
+# NX809J self-hosted release build
 
-The self-hosted workflow uses the portable build entry point and its fixed source
-lock. Port fixes are committed in their owning repositories. It does not apply
-device-tree mailbox patches or run mechanical source substitutions.
+The manually dispatched workflow uses the portable fixed-source entrypoint for
+`lineage_NX809J-bp4a-user`, with the personal 6.12.38/ReSukiSU prebuilt kernel.
+It signs during compilation and packages the verified partition images directly.
+Target-files and OTA generation are not part of this workflow.
 
-Install the portable build files on the runner, including `tools/nx809j`,
-`build-inputs`, and `README.build.txt`. Configure `NX809J_PORT_SCRIPT` and
-`NX809J_RELEASE_DIR` if their paths differ from the workflow defaults.
-The Linux runner must have access to the private personal source imports.
-Keep credentials in the runner's Git credential setup, outside the build package.
+Before dispatch, provision the matching private keys on the trusted build account
+and run the verifier documented in [signing/README.md](../signing/README.md).
+The public trust fingerprints and signing policy are committed. Private keys are
+neither GitHub secrets managed by this workflow nor release artifacts.
 
-The optional synchronization step checks local changes, writes the fixed
-manifest, synchronizes sources, and checks every locked revision. The build step
-verifies committed features and prepares fixed binary dependencies before
-building the system and boot images. Additional `dist` or custom targets run
-after that verified base build. A source mismatch stops the workflow.
+The runner needs the synchronized portable script, tools, binary inputs, the
+reviewed 0823 firmware inputs and sufficient build/package space. Repository
+variables can select those paths; all source revisions remain pinned by the
+portable source lock. The runner needs root or configured non-interactive sudo
+for read-only image verification and Super assembly.
 
-Android system partitions and boot packaging are built from the locked sources.
-The GKI image, vendor, ODM base, and kernel drivers remain fixed binary inputs.
-The ODM assembler installs the committed manifest and matching source-built
-control and camera components, preserving OEM metadata.
+The build rejects public test private-key dependencies, missing or mismatched
+key pairs and changed pre-signed exceptions. Before publication it checks
+APK/APEX signatures inside the actual system images and records image hashes.
+The common Lineage public recovery test key is excluded from user builds.
 
-The legacy signing and release packaging steps remain optional. Their static
-vendor/ODM/DLKM paths must point to the reviewed inputs. The portable `super`
-command prepares those inputs from the official 0823 package.
-
-This workflow is dispatched manually; committing source fixes does not launch a
-build or publish a firmware release. Deployment requires the verified
-SuperFastboot mode and the project's image, slot, capacity, and backup checks.
+Vendor, ODM and driver inputs retain the project's validated hybrid arrangement.
+Custom AVB signatures retain `flags=3`; no claim of OEM verified-boot enforcement
+or bootloader relocking is made. The workflow does not connect to or flash phones.

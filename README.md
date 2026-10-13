@@ -1,68 +1,62 @@
-# LineageOS 23.2 device tree — ZTE Nubia RedMagic 11 Pro (NX809J / `canoe`)
+# NX809J / AviumUI 16.2 device tree
 
-A **device-specific** LineageOS 23.2 (Android 16 / SDK 36) port for the RedMagic 11 Pro
-(Snapdragon 8 Elite Gen 5 / SM8850). This is a real device port — **not a GSI overlay**:
-`system`, `system_ext`, `product`, and `odm` are all built from this tree and report
-`lineage_NX809J`.
+Device configuration for the Nubia RedMagic 11 Pro (`NX809J`, `canoe`, SM8850).
+The personal branch builds AviumUI Android 16 userspace and its boot images,
+then combines them with the project's fixed vendor, ODM and driver inputs.
 
-## Status
-**First known device-specific LineageOS boot on this device** (`sys.boot_completed=1`, ~33 s
-to home screen). Public efforts before this had only booted GSIs. Functional after first boot:
-display (60–144 Hz, HDR10/HLG), GPU, Wi-Fi, Bluetooth, NFC, camera HAL, sensors, audio, GPS,
-RIL. Work in progress: fingerprint (under-display Goodix udfps HAL), advanced haptics, fan/RGB
-controls, SELinux enforcing. Current images are a **debug boot** (permissive SELinux via
-vendor_boot cmdline) — see "Hardening TODO".
+## Current build configuration
 
-## Approach
-The from-source kernel is **unbuildable** (ZTE shipped incomplete GPLv2 sources — missing
-`canoe.fragment`, drivers). So this port **rides the stock GKI kernel + DTB** (prebuilt) and
-builds only the LineageOS userspace, paired with the **stock vendor** partition.
+- Product: `lineage_NX809J-bp4a-user`.
+- Kernel: the verified personal 6.12.38/ReSukiSU Image from
+  [android_kernel_nubia_NX809J](https://github.com/Nattsu39/android_kernel_nubia_NX809J/tree/nx809j-avium-16.2).
+  The prebuilt repository records the source commits and successful build run.
+- Signing: separately provisioned private APK/APEX/AVB keys. See
+  [signing/README.md](signing/README.md) for the pinned public fingerprints,
+  coverage, preserved pre-signed packages and verification commands.
+- SELinux starts enforcing. The hybrid AVB policy retains `vbmeta flags=3`.
 
-Two things are essential and non-obvious:
-1. **Build at the `bp4a` release config, not `bp2a`.** Both yield SDK 36, but `bp4a` is
-   LineageOS's release config (carries the correct app aconfig flag values). `bp2a` leaves
-   LineageOS-app flags at AOSP defaults, which breaks Trebuchet (recents/back-gesture crash)
-   and the status-bar clock, among others.
-2. **Force a runtime SELinux compile.** Framework (LineageOS) + vendor (stock) are built
-   separately, so a precompiled `odm` sepolicy can never match. Strip
-   `odm/etc/selinux/precompiled_sepolicy` (+ its `.sha256`) so `init` runtime-compiles the
-   present CIL (which includes the stock vendor's ~30 Nubia property types).
+The user/release configuration is a build migration. Previous userdebug hardware
+results do not constitute validation of a newly built user image or a clean-data
+installation. Fingerprint/face enrollment and other hardware regressions require
+their own deployment checks.
 
-## Build
-```
-# repo sync with the local manifest (device + prebuilt kernel + vendor):
-#   .repo/local_manifests/nx809j.xml  (see the IronShing/NX809J meta repo)
+## Building
+
+Use the NX809J portable build entrypoint and its fixed source lock. It verifies
+source revisions, private-key fingerprints, the kernel/DTBO pairing and the
+image signing dependency graph before producing release artifacts. It also
+preserves the stock first-stage modules and SELinux labels when assembling Super.
+
+For configuration-only validation from an already prepared source tree:
+
+```sh
 source build/envsetup.sh
-lunch lineage_NX809J-bp4a-userdebug        # bp4a — NOT bp2a
-m -j<N> systemimage systemextimage productimage odmimage
+lunch lineage_NX809J-bp4a-user
+m nothing
+python3 device/nubia/NX809J/scripts/verify_release_graph.py --source-tree "$PWD"
 ```
-Then assemble a device `super` from the built framework images + the **stock BP2A vendor /
-vendor_dlkm / system_dlkm**, with the `odm` precompiled sepolicy stripped (above), and flash it
-alongside the stock boot chain.
 
-## The walls (how it got to boot)
-- **Wall 1 — qseecom CMA:** memory reservation; fixed in the prebuilt DTB.
-- **Wall 3 — system-as-root:** `/system` must carry the root mount-point layout; produced by a
-  proper source build (no patch needed once built correctly).
-- **Wall 9a — sepolicy compile:** use the fresh LineageOS `system_ext` (the stock one's
-  `vendor_voiceui_app` type failed to resolve).
-- **Walls 9b/10 — property area / runtime sepolicy:** strip the `odm` precompiled policy so
-  `init` runtime-compiles with the stock vendor's property types (otherwise
-  `Failed to initialize property area`).
-- **Wall 11 — `/data` read-only:** wipe `/data` + `/metadata` (the device ships CN encryption);
-  LineageOS sets up fresh FBE on first boot.
-- **Wall 12 — `com.android.bt` APEX:** declared `min_sdk 36` vs an SDK-35 platform. Fixed
-  properly by building the platform at SDK 36.
-- **Wall 13 — stock-vendor SDK-36 APEXes:** `com.android.hardware.cas` etc. are vendor-signed
-  SDK-36 APEXes that cannot be rebuilt. Fixed by aligning the **platform to SDK 36 (bp4a)** so
-  it accepts them — framework ≥ vendor (correct Treble), instead of the backwards
-  SDK-35-framework-on-SDK-36-vendor we started with.
+`bp4a` is the required release configuration. The release entrypoint generates
+system/system_ext/product and a matching boot chain, verifies the signatures,
+and assembles the hybrid Super. It does not need an OTA package.
 
-## Hardening TODO (current boot is debug)
-Permissive SELinux (via `vendor_boot` cmdline), `flags=3` vbmeta, debuggable/adb-open. To go
-production: collect the full `avc` denial set and move to enforcing (e.g. ensure `odm` files are
-properly labeled, not `unlabeled`); proper vbmeta; validate the udfps fingerprint, haptics,
-camera, and thermal HALs.
+Restore the existing private signing identity when moving to another machine.
+Private keys do not belong in this repository or in the portable build archive.
+The self-hosted workflow follows the same entrypoint and requires locally
+provisioned keys; see [.github/README-CI.md](.github/README-CI.md).
+
+## Deployment boundaries
+
+Use the installed **SuperFastboot** and the project's partition, slot and image
+checks. The original ABL fastboot cannot flash this device. Do not replace the
+validated vendor/firmware baseline, flash ABL/EFISP to enter a mode, erase factory
+calibration partitions or relock the bootloader as part of this migration.
+
+A clean user-data installation avoids migrating the previous platform signing
+identity. The original per-device calibration on `persist` must be retained.
 
 ## Credits
-Bring-up by IronShing. Stock kernel/vendor from ZTE/Nubia firmware (BP2A.250605, REDMAGICOS 11).
+
+Initial NX809J device bring-up by IronShing, using ZTE/Nubia vendor components.
+The Nattsu39 branch maintains the AviumUI integration, committed device fixes,
+fixed personal kernel input and reproducible release build configuration.
